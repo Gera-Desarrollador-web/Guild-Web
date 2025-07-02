@@ -91,24 +91,29 @@ const GuildTable: React.FC = () => {
 
         const category = newCategoryName.trim();
 
+        // Agrega la categoría solo al jugador seleccionado
         setAllMembers((prev) =>
-            prev.map((member) => ({
-                ...member,
-                categories: {
-                    ...member.categories,
-                    [category]: member.categories?.[category] || [],
-                },
-            }))
+            prev.map((member) =>
+                member.name === selectedPlayer.name
+                    ? {
+                        ...member,
+                        categories: {
+                            ...member.categories,
+                            [category]: [],
+                        },
+                    }
+                    : member
+            )
         );
 
-        // También actualiza el selectedPlayer
+        // También actualiza la copia local del jugador en el modal
         setSelectedPlayer((prev) =>
             prev
                 ? {
                     ...prev,
                     categories: {
                         ...prev.categories,
-                        [category]: prev.categories?.[category] || [],
+                        [category]: [],
                     },
                 }
                 : null
@@ -116,6 +121,7 @@ const GuildTable: React.FC = () => {
 
         setNewCategoryName("");
     };
+
     const cleanEmptyCategories = (members: GuildMember[]): GuildMember[] => {
         const categoryUsage: { [cat: string]: boolean } = {};
 
@@ -220,39 +226,45 @@ const GuildTable: React.FC = () => {
     const removeCategory = (category: string) => {
         if (!selectedPlayer) return;
 
-        // Verificar si algún miembro tiene elementos en esa categoría
-        const isCategoryUsed = allMembers.some((member) => {
-            const items = member.categories?.[category] || [];
-            return items.length > 0;
-        });
+        // Verificar si el jugador seleccionado tiene elementos en esa categoría
+        const items = selectedPlayer.categories?.[category] || [];
 
-        // Si alguien la está usando, no eliminar
-        if (isCategoryUsed) {
-            alert(`No se puede eliminar la categoría "${category}" porque al menos un jugador tiene elementos en ella.`);
+        if (items.length > 0) {
+            alert(`No se puede eliminar la categoría "${category}" porque contiene elementos.`);
             return;
         }
 
-        // Si nadie la está usando, se puede eliminar de todos
+        // Eliminar la categoría del player en allMembers
         setAllMembers((prev) =>
-            prev.map((member) => ({
-                ...member,
-                categories: Object.fromEntries(
-                    Object.entries(member.categories || {}).filter(([cat]) => cat !== category)
-                ),
-            }))
+            prev.map((member) =>
+                member.name === selectedPlayer.name
+                    ? {
+                        ...member,
+                        categories: Object.fromEntries(
+                            Object.entries(member.categories || {}).filter(
+                                ([key]) => key !== category
+                            )
+                        ),
+                    }
+                    : member
+            )
         );
 
+        // También eliminarla de la copia local
         setSelectedPlayer((prev) =>
             prev
                 ? {
                     ...prev,
                     categories: Object.fromEntries(
-                        Object.entries(prev.categories || {}).filter(([cat]) => cat !== category)
+                        Object.entries(prev.categories || {}).filter(
+                            ([key]) => key !== category
+                        )
                     ),
                 }
                 : null
         );
     };
+
 
 
 
@@ -318,11 +330,7 @@ const GuildTable: React.FC = () => {
                                 <th className="border px-4 py-2">Nivel</th>
                                 <th className="border px-4 py-2">Vocación</th>
                                 <th className="border px-4 py-2">Estado</th>
-                                {allCategoryNames.map((cat) => (
-                                    <th key={cat} className="border px-4 py-2 capitalize">
-                                        {cat}
-                                    </th>
-                                ))}
+
                             </tr>
                         </thead>
                         <tbody>
@@ -343,15 +351,7 @@ const GuildTable: React.FC = () => {
                                             <span className="text-gray-500">Offline</span>
                                         )}
                                     </td>
-                                    {allCategoryNames.map((cat) => (
-                                        <td className="border px-4 py-2 text-sm text-left align-top">
-                                            <ul className="list-disc list-inside">
-                                                {(player.categories?.[cat] || []).map((item, i) => (
-                                                    <li key={i}>{item}</li>
-                                                ))}
-                                            </ul>
-                                        </td>
-                                    ))}
+
                                 </tr>
                             ))}
                         </tbody>
