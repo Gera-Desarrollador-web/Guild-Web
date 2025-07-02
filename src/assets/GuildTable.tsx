@@ -25,23 +25,51 @@ const GuildTable: React.FC = () => {
     const [newCategoryName, setNewCategoryName] = useState("");
     const [newCategoryItems, setNewCategoryItems] = useState<{ [cat: string]: string }>({});
 
+    const [checkedItems, setCheckedItems] = useState<{
+        [playerName: string]: {
+            [categoryName: string]: {
+                [itemName: string]: boolean;
+            };
+        };
+    }>({});
+
+
     // Fetch data
     const fetchGuildData = async () => {
         setLoading(true);
         setError("");
+        let members: GuildMember[] = [];
         try {
             const url = `https://api.tibiadata.com/v4/guild/${encodeURIComponent(guildName)}`;
             const res = await fetch(url);
             const data = await res.json();
-            const members: GuildMember[] = data.guild.members || [];
+            members = data.guild.members || [];
             setAllMembers(members);
+
+            // Inicializa checkedItems para todos los miembros
+            const initChecked: typeof checkedItems = {};
+            members.forEach(member => {
+                initChecked[member.name] = {};
+                if (member.categories) {
+                    Object.entries(member.categories).forEach(([cat, items]) => {
+                        initChecked[member.name][cat] = {};
+                        items.forEach(item => {
+                            initChecked[member.name][cat][item] = false;
+                        });
+                    });
+                }
+            });
+            setCheckedItems(initChecked);
+
         } catch (err) {
             setError("Error al cargar los datos de la guild.");
             setAllMembers([]);
+            setCheckedItems({});
         } finally {
             setLoading(false);
         }
     };
+
 
     useEffect(() => {
         fetchGuildData();
@@ -53,14 +81,24 @@ const GuildTable: React.FC = () => {
             ? allMembers.filter((m) => m.status.toLowerCase() === "online")
             : [...allMembers];
 
-        if (questFilter.trim()) {
-            const filter = questFilter.toLowerCase();
-            members = members.filter((member) =>
-                Object.values(member.categories || {}).some((items) =>
-                    items.some((item) => item.toLowerCase().includes(filter))
-                )
-            );
-        }
+      if (questFilter.trim()) {
+    const filter = questFilter.toLowerCase();
+
+    members = members.filter((member) => {
+        if (!member.categories) return false;
+
+        // Busca en las categorías y items si alguno coincide con el filtro y está palomeado
+        return Object.entries(member.categories).some(([cat, items]) =>
+            items.some((item) => {
+                const matchesFilter = item.toLowerCase().includes(filter);
+                const isChecked =
+                    checkedItems[member.name]?.[cat]?.[item] === true;
+                return matchesFilter && isChecked;
+            })
+        );
+    });
+}
+
 
         members = [...members];
 
@@ -74,8 +112,8 @@ const GuildTable: React.FC = () => {
         return members;
     }, [allMembers, showOnlyOnline, questFilter, sortBy]);
 
- 
-  
+
+
 
     // Agregar una nueva categoría al jugador seleccionado
     const addNewCategory = () => {
@@ -83,29 +121,25 @@ const GuildTable: React.FC = () => {
 
         const category = newCategoryName.trim();
 
-        // Agrega la categoría solo al jugador seleccionado
+        // Agrega la categoría a TODOS los miembros, solo si no la tienen aún
         setAllMembers((prev) =>
-            prev.map((member) =>
-                member.name === selectedPlayer.name
-                    ? {
-                        ...member,
-                        categories: {
-                            ...member.categories,
-                            [category]: [],
-                        },
-                    }
-                    : member
-            )
+            prev.map((member) => ({
+                ...member,
+                categories: {
+                    ...member.categories,
+                    [category]: member.categories?.[category] || [], // si ya existe, no la sobrescribe
+                },
+            }))
         );
 
-        // También actualiza la copia local del jugador en el modal
+        // Actualiza la copia local del jugador seleccionado para que tenga la categoría también
         setSelectedPlayer((prev) =>
             prev
                 ? {
                     ...prev,
                     categories: {
                         ...prev.categories,
-                        [category]: [],
+                        [category]: prev.categories?.[category] || [],
                     },
                 }
                 : null
@@ -113,6 +147,7 @@ const GuildTable: React.FC = () => {
 
         setNewCategoryName("");
     };
+
 
     const cleanEmptyCategories = (members: GuildMember[]): GuildMember[] => {
         const categoryUsage: { [cat: string]: boolean } = {};
@@ -154,18 +189,28 @@ const GuildTable: React.FC = () => {
         if (!newItem) return;
 
         setAllMembers((prev) =>
-            prev.map((member) =>
-                member.name === selectedPlayer.name
-                    ? {
-                        ...member,
-                        categories: {
-                            ...member.categories,
-                            [category]: [...(member.categories?.[category] || []), newItem],
-                        },
-                    }
-                    : member
-            )
+            prev.map((member) => {
+                const currentItems = member.categories?.[category] || [];
+                if (currentItems.includes(newItem)) return member; // Evitar duplicados
+
+                return {
+                    ...member,
+                    categories: {
+                        ...member.categories,
+                        [category]: [...currentItems, newItem],
+                    },
+                };
+            })
         );
+
+        setCheckedItems((prev) => {
+            const newChecked = { ...prev };
+            Object.keys(newChecked).forEach(player => {
+                if (!newChecked[player][category]) newChecked[player][category] = {};
+                newChecked[player][category][newItem] = false;
+            });
+            return newChecked;
+        });
 
         setSelectedPlayer((prev) =>
             prev
@@ -182,75 +227,85 @@ const GuildTable: React.FC = () => {
         setNewCategoryItems((prev) => ({ ...prev, [category]: "" }));
     };
 
+
     // Borrar item de categoría para jugador seleccionado
     const removeItemFromCategory = (category: string, index: number) => {
         if (!selectedPlayer) return;
+        const itemToRemove = selectedPlayer.categories?.[category]?.[index];
+        if (!itemToRemove) return;
 
-        setAllMembers((prev) => {
-            const updated = prev.map((member) =>
-                member.name === selectedPlayer.name
-                    ? {
-                        ...member,
-                        categories: {
-                            ...member.categories,
-                            [category]: member.categories?.[category]?.filter((_, i) => i !== index) || [],
-                        },
-                    }
-                    : member
-            );
-            return cleanEmptyCategories(updated);
-        });
-
-
-        setSelectedPlayer((prev) =>
-            prev
-                ? {
-                    ...prev,
-                    categories: {
-                        ...prev.categories,
-                        [category]: prev.categories?.[category]?.filter((_, i) => i !== index) || [],
-                    },
-                }
-                : null
-        );
-
-    };
-    const removeCategory = (category: string) => {
-        if (!selectedPlayer) return;
-
-        // Verificar si el jugador seleccionado tiene elementos en esa categoría
-        const items = selectedPlayer.categories?.[category] || [];
-
-        if (items.length > 0) {
-            alert(`No se puede eliminar la categoría "${category}" porque contiene elementos.`);
+        if (!canRemoveItem(category, itemToRemove)) {
+            alert(`No se puede eliminar el ítem "${itemToRemove}" porque está palomeado por algún miembro.`);
             return;
         }
 
-        // Eliminar la categoría del player en allMembers
         setAllMembers((prev) =>
-            prev.map((member) =>
-                member.name === selectedPlayer.name
-                    ? {
-                        ...member,
-                        categories: Object.fromEntries(
-                            Object.entries(member.categories || {}).filter(
-                                ([key]) => key !== category
-                            )
-                        ),
-                    }
-                    : member
-            )
+            prev.map((member) => ({
+                ...member,
+                categories: {
+                    ...member.categories,
+                    [category]: member.categories?.[category].filter((_, i) => i !== index),
+                },
+            }))
         );
 
-        // También eliminarla de la copia local
+        setCheckedItems((prev) => {
+            const newChecked = { ...prev };
+            Object.keys(newChecked).forEach(player => {
+                if (newChecked[player][category]) {
+                    const { [itemToRemove]: _, ...rest } = newChecked[player][category];
+                    newChecked[player][category] = rest;
+                }
+            });
+            return newChecked;
+        });
+
+        setSelectedPlayer((prev) => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                categories: {
+                    ...prev.categories,
+                    [category]: prev.categories?.[category].filter((_, i) => i !== index),
+                },
+            };
+        });
+    };
+
+    const removeCategory = (category: string) => {
+        if (!selectedPlayer) return;
+
+        if (!canRemoveCategory(category)) {
+            alert(`No se puede eliminar la categoría "${category}" porque tiene ítems palomeados.`);
+            return;
+        }
+
+        // eliminar categoría para todos (similar a addNewCategory pero borrando)
+        setAllMembers((prev) =>
+            prev.map((member) => ({
+                ...member,
+                categories: Object.fromEntries(
+                    Object.entries(member.categories || {}).filter(([key]) => key !== category)
+                ),
+            }))
+        );
+
+        setCheckedItems((prev) => {
+            const newChecked = { ...prev };
+            Object.keys(newChecked).forEach(player => {
+                if (newChecked[player][category]) {
+                    delete newChecked[player][category];
+                }
+            });
+            return newChecked;
+        });
+
         setSelectedPlayer((prev) =>
             prev
                 ? {
                     ...prev,
                     categories: Object.fromEntries(
-                        Object.entries(prev.categories || {}).filter(
-                            ([key]) => key !== category
-                        )
+                        Object.entries(prev.categories || {}).filter(([key]) => key !== category)
                     ),
                 }
                 : null
@@ -258,6 +313,44 @@ const GuildTable: React.FC = () => {
     };
 
 
+    const toggleCheckItem = (playerName: string, category: string, item: string) => {
+        setCheckedItems((prev) => {
+            const playerChecks = prev[playerName] || {};
+            const catChecks = playerChecks[category] || {};
+            const current = catChecks[item] || false;
+
+            return {
+                ...prev,
+                [playerName]: {
+                    ...playerChecks,
+                    [category]: {
+                        ...catChecks,
+                        [item]: !current,
+                    },
+                },
+            };
+        });
+    };
+
+    const canRemoveItem = (category: string, item: string): boolean => {
+        for (const playerName in checkedItems) {
+            if (checkedItems[playerName]?.[category]?.[item]) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    const canRemoveCategory = (category: string): boolean => {
+        for (const playerName in checkedItems) {
+            if (checkedItems[playerName][category]) {
+                for (const item in checkedItems[playerName][category]) {
+                    if (checkedItems[playerName][category][item]) return false;
+                }
+            }
+        }
+        return true;
+    };
 
 
     return (
@@ -403,21 +496,32 @@ const GuildTable: React.FC = () => {
                                         </div>
 
                                         <ul className="mb-2 max-h-32 overflow-y-auto">
-                                            {items.map((item, i) => (
-                                                <li
-                                                    key={i}
-                                                    className="flex justify-between items-center py-1"
-                                                >
-                                                    <span>{item}</span>
-                                                    <button
-                                                        className="text-red-500 font-bold hover:text-red-700"
-                                                        onClick={() => removeItemFromCategory(cat, i)}
-                                                        aria-label={`Eliminar ${item} de ${cat}`}
+                                            {items.map((item, i) => {
+                                                const isChecked = checkedItems[selectedPlayer.name]?.[cat]?.[item] || false;
+                                                return (
+                                                    <li
+                                                        key={i}
+                                                        className="flex justify-between items-center py-1"
+                                                        style={{ color: isChecked ? "green" : "red" }}
                                                     >
-                                                        ×
-                                                    </button>
-                                                </li>
-                                            ))}
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isChecked}
+                                                                onChange={() => toggleCheckItem(selectedPlayer.name, cat, item)}
+                                                            />
+                                                            <span>{item}</span>
+                                                        </label>
+                                                        <button
+                                                            className="text-red-500 font-bold hover:text-red-700"
+                                                            onClick={() => removeItemFromCategory(cat, i)}
+                                                            aria-label={`Eliminar ${item} de ${cat}`}
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                         <div className="flex gap-2">
                                             <input
@@ -444,6 +548,7 @@ const GuildTable: React.FC = () => {
                             ) : (
                                 <p>No hay categorías aún.</p>
                             )}
+
 
                             <div className="mt-6 border-t pt-4">
                                 <h4 className="font-semibold mb-2">Agregar nueva categoría</h4>
