@@ -119,7 +119,7 @@ const GuildTable: React.FC = () => {
     const addNewCategory = () => {
         if (!selectedPlayer || !newCategoryName.trim()) return;
 
-        const category = newCategoryName.trim();
+       
 
         // Agrega la categoría a TODOS los miembros, solo si no la tienen aún
         setAllMembers((prev) =>
