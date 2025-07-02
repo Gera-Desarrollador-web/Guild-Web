@@ -5,8 +5,8 @@ type GuildMember = {
     level: number;
     vocation: string;
     status: string;
-    categories?: {
-        [categoryName: string]: string[];
+    categories: {
+        [categoryName: string]: string[]; // <- NO permite undefined
     };
 };
 
@@ -81,23 +81,23 @@ const GuildTable: React.FC = () => {
             ? allMembers.filter((m) => m.status.toLowerCase() === "online")
             : [...allMembers];
 
-      if (questFilter.trim()) {
-    const filter = questFilter.toLowerCase();
+        if (questFilter.trim()) {
+            const filter = questFilter.toLowerCase();
 
-    members = members.filter((member) => {
-        if (!member.categories) return false;
+            members = members.filter((member) => {
+                if (!member.categories) return false;
 
-        // Busca en las categorías y items si alguno coincide con el filtro y está palomeado
-        return Object.entries(member.categories).some(([cat, items]) =>
-            items.some((item) => {
-                const matchesFilter = item.toLowerCase().includes(filter);
-                const isChecked =
-                    checkedItems[member.name]?.[cat]?.[item] === true;
-                return matchesFilter && isChecked;
-            })
-        );
-    });
-}
+                // Busca en las categorías y items si alguno coincide con el filtro y está palomeado
+                return Object.entries(member.categories).some(([cat, items]) =>
+                    items.some((item) => {
+                        const matchesFilter = item.toLowerCase().includes(filter);
+                        const isChecked =
+                            checkedItems[member.name]?.[cat]?.[item] === true;
+                        return matchesFilter && isChecked;
+                    })
+                );
+            });
+        }
 
 
         members = [...members];
@@ -123,13 +123,18 @@ const GuildTable: React.FC = () => {
 
         // Agrega la categoría a TODOS los miembros, solo si no la tienen aún
         setAllMembers((prev) =>
-            prev.map((member) => ({
-                ...member,
-                categories: {
-                    ...member.categories,
-                    [category]: member.categories?.[category] || [], // si ya existe, no la sobrescribe
-                },
-            }))
+            prev.map((member) =>
+                member.name === selectedPlayer.name
+                    ? {
+                        ...member,
+                        categories: Object.fromEntries(
+                            Object.entries(member.categories || {}).filter(
+                                ([_, items]) => Array.isArray(items) && items.length > 0
+                            )
+                        )
+                    }
+                    : member
+            )
         );
 
         // Actualiza la copia local del jugador seleccionado para que tenga la categoría también
@@ -137,49 +142,21 @@ const GuildTable: React.FC = () => {
             prev
                 ? {
                     ...prev,
-                    categories: {
-                        ...prev.categories,
-                        [category]: prev.categories?.[category] || [],
-                    },
+                    categories: Object.fromEntries(
+                        Object.entries(prev.categories || {}).filter(
+                            ([_, items]) => Array.isArray(items) && items.length > 0
+                        )
+                    )
                 }
                 : null
         );
+
 
         setNewCategoryName("");
     };
 
 
-    const cleanEmptyCategories = (members: GuildMember[]): GuildMember[] => {
-        const categoryUsage: { [cat: string]: boolean } = {};
 
-        // Primero, recolecta si hay al menos un uso de cada categoría
-        members.forEach((member) => {
-            Object.entries(member.categories || {}).forEach(([cat, items]) => {
-                if (items.length > 0) {
-                    categoryUsage[cat] = true; // Marca como usada
-                } else if (!(cat in categoryUsage)) {
-                    categoryUsage[cat] = false; // Inicialmente no usada
-                }
-            });
-        });
-
-        // Detecta categorías vacías globales
-        const emptyCats = Object.entries(categoryUsage)
-            .filter(([_, used]) => !used)
-            .map(([cat]) => cat);
-
-        if (emptyCats.length === 0) return members;
-
-        // Elimina esas categorías vacías en todos
-        return members.map((member) => {
-            const updatedCategories = Object.fromEntries(
-                Object.entries(member.categories || {}).filter(
-                    ([cat]) => !emptyCats.includes(cat)
-                )
-            );
-            return { ...member, categories: updatedCategories };
-        });
-    };
 
 
     // Agregar item a una categoría para el jugador seleccionado
