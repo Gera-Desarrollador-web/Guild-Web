@@ -74,16 +74,8 @@ const GuildTable: React.FC = () => {
         return members;
     }, [allMembers, showOnlyOnline, questFilter, sortBy]);
 
-    // Obtener todas las categorías usadas en cualquier jugador (para columnas)
-    const allCategoryNames = useMemo(() => {
-        const catSet = new Set<string>();
-        allMembers.forEach((member) => {
-            if (member.categories) {
-                Object.keys(member.categories).forEach((cat) => catSet.add(cat));
-            }
-        });
-        return Array.from(catSet);
-    }, [allMembers]);
+ 
+  
 
     // Agregar una nueva categoría al jugador seleccionado
     const addNewCategory = () => {
