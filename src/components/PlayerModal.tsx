@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { GuildMember } from "../types";
 
 type CheckedItems = {
@@ -30,14 +31,40 @@ const PlayerModal: React.FC<Props> = ({
     checkedItems,
     setCheckedItems,
 }) => {
-    // ✅ HOOKS AL PRINCIPIO, FUERA DE CONDICIONES
     const [activeTab, setActiveTab] = useState<Tab>("bosses");
     const [newItem, setNewItem] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [inputPosition, setInputPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
-    // ❗️ Importante: salir del componente luego del hook
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (
+                inputRef.current &&
+                !inputRef.current.contains(event.target as Node) &&
+                !document.getElementById("suggestions-portal")?.contains(event.target as Node)
+            ) {
+                setShowSuggestions(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (showSuggestions && inputRef.current) {
+            const rect = inputRef.current.getBoundingClientRect();
+            setInputPosition({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, width: rect.width });
+        } else {
+            setInputPosition(null);
+        }
+    }, [showSuggestions, newItem]);
+
     if (!selectedPlayer) return null;
-    
+
     const vocationGifs: { [key: string]: { [key: string]: string } } = {
         Knight: { male: "/Knight.gif", female: "/knightFemale.gif" },
         "Elite Knight": { male: "/Knight.gif", female: "/KnightFemale.gif" },
@@ -69,7 +96,6 @@ const PlayerModal: React.FC<Props> = ({
         const trimmedItem = newItem.trim();
 
         if (activeTab === "chares") {
-            // Solo agregar si es un nombre válido de miembro y no está ya agregado
             const isValidMember = allMembers.some(
                 (m) => m.name.toLowerCase() === trimmedItem.toLowerCase()
             );
@@ -83,7 +109,6 @@ const PlayerModal: React.FC<Props> = ({
                 return;
             }
 
-            // Agregar solo al jugador seleccionado, asegurando data exista
             const updatedMembers = allMembers.map((member) =>
                 member.name === selectedPlayer.name
                     ? {
@@ -103,7 +128,6 @@ const PlayerModal: React.FC<Props> = ({
             setNewItem("");
             setShowSuggestions(false);
         } else if (activeTab === "bosses" || activeTab === "quests") {
-            // Agregar a todos los miembros si no lo tienen ya
             const updatedMembers = allMembers.map((member) => {
                 const list = member.data?.[activeTab] || [];
                 if (list.includes(trimmedItem)) return member;
@@ -124,7 +148,6 @@ const PlayerModal: React.FC<Props> = ({
             refreshSelectedPlayer(updatedMembers);
             setNewItem("");
         } else {
-            // Para "notas" u otras pestañas (solo el jugador seleccionado)
             const updatedMembers = allMembers.map((member) =>
                 member.name === selectedPlayer.name
                     ? {
@@ -146,7 +169,6 @@ const PlayerModal: React.FC<Props> = ({
     };
 
     const removeItem = (item: string) => {
-        // Verificar si el ítem está marcado por cualquier jugador (solo para bosses y quests)
         if (activeTab === "bosses" || activeTab === "quests") {
             const isCheckedByAnyone = Object.values(checkedItems).some(
                 (playerItems) => playerItems?.[activeTab]?.[item]
@@ -193,7 +215,6 @@ const PlayerModal: React.FC<Props> = ({
         refreshSelectedPlayer(updatedMembers);
 
         if (activeTab === "bosses" || activeTab === "quests") {
-            // Limpiar el ítem de checkedItems para todos los jugadores
             const updatedChecked = { ...checkedItems };
             Object.keys(updatedChecked).forEach((playerName) => {
                 if (updatedChecked[playerName]?.[activeTab]?.[item]) {
@@ -204,27 +225,55 @@ const PlayerModal: React.FC<Props> = ({
         }
     };
 
-    // Para sugerencias en chares
     const filteredSuggestions =
         activeTab === "chares" && newItem.trim()
             ? allMembers
                 .filter(
                     (m) =>
                         m.name.toLowerCase().includes(newItem.trim().toLowerCase()) &&
-                        m.name !== selectedPlayer.name && // excluir jugador actual
-                        !(currentList || []).includes(m.name) // excluir ya agregados
+                        m.name !== selectedPlayer.name &&
+                        !(currentList || []).includes(m.name)
                 )
                 .map((m) => m.name)
-                .slice(0, 5) // máximo 5 sugerencias
+                .slice(0, 5)
             : [];
 
     const onSuggestionClick = (name: string) => {
-        setNewItem(name); // solo rellena el input
+        setNewItem(name);
         setShowSuggestions(false);
     };
 
+    // Componente portal para la lista de sugerencias
+    const SuggestionsPortal = () => {
+        if (!inputPosition) return null;
+        return createPortal(
+            <ul
+                id="suggestions-portal"
+                className="bg-white border rounded shadow max-h-40 overflow-y-auto"
+                style={{
+                    position: "absolute",
+                    top: inputPosition.top,
+                    left: inputPosition.left,
+                    width: inputPosition.width,
+                    zIndex: 9999,
+                }}
+            >
+                {filteredSuggestions.map((name) => (
+                    <li
+                        key={name}
+                        className="px-2 py-1 cursor-pointer hover:bg-gray-200"
+                        onMouseDown={() => onSuggestionClick(name)}
+                    >
+                        {name}
+                    </li>
+                ))}
+            </ul>,
+            document.body
+        );
+    };
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 ">
             <div className="bg-white p-4 rounded shadow-lg w-[90%] max-w-xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex">
@@ -242,8 +291,8 @@ const PlayerModal: React.FC<Props> = ({
                                 <span className="font-bold">Status: </span>
                                 <span
                                     className={`${selectedPlayer.status.toLowerCase() === "online"
-                                        ? "text-green-600"
-                                        : "text-gray-700"
+                                            ? "text-green-600"
+                                            : "text-gray-700"
                                         }`}
                                 >
                                     {selectedPlayer.status}
@@ -362,9 +411,10 @@ const PlayerModal: React.FC<Props> = ({
                     ))}
                 </ul>
 
-                {/* Input con sugerencias para chares */}
+                {/* Input con sugerencias */}
                 <div className="relative flex space-x-2 mb-4">
                     <input
+                        ref={inputRef}
                         type="text"
                         value={newItem}
                         onChange={(e) => {
@@ -372,7 +422,6 @@ const PlayerModal: React.FC<Props> = ({
                             if (activeTab === "chares") setShowSuggestions(true);
                         }}
                         onBlur={() => {
-                            // Delay para que el click en sugerencias se registre antes de ocultar
                             setTimeout(() => setShowSuggestions(false), 150);
                         }}
                         className="flex-1 border rounded px-2 py-1"
@@ -384,23 +433,10 @@ const PlayerModal: React.FC<Props> = ({
                     >
                         Agregar
                     </button>
-
-                    {/* Sugerencias */}
-                    {showSuggestions && filteredSuggestions.length > 0 && (
-                        <ul className="absolute top-full left-0 right-0 bg-white border rounded shadow max-h-40 overflow-y-auto z-10">
-                            {filteredSuggestions.map((name) => (
-                                <li
-                                    key={name}
-                                    className="px-2 py-1 cursor-pointer hover:bg-gray-200"
-                                    onMouseDown={() => onSuggestionClick(name)} // onMouseDown para evitar perder foco
-                                >
-                                    {name}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
                 </div>
             </div>
+
+            {showSuggestions && filteredSuggestions.length > 0 && <SuggestionsPortal />}
         </div>
     );
 };
