@@ -5,9 +5,6 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import isEqual from "lodash.isequal";
 import { GuildMember, CheckedItems } from "./types";
 
-const tabs = ["bosses", "quests", "chares", "notas"] as const;
-type Tab = typeof tabs[number];
-
 const App: React.FC = () => {
   const guildName = "Twenty Thieves";
 
@@ -23,7 +20,6 @@ const App: React.FC = () => {
   const [originalCheckedItems, setOriginalCheckedItems] = useState<CheckedItems>({});
   const [skipSaveOnFirstLoad, setSkipSaveOnFirstLoad] = useState(true);
 
-  // Ref para comparar previos allMembers y evitar guardados innecesarios
   const previousAllMembersRef = useRef<GuildMember[]>([]);
 
   const saveDataToFirestore = async () => {
@@ -51,24 +47,42 @@ const App: React.FC = () => {
       const docRef = doc(db, "guilds", guildName);
       const snap = await getDoc(docRef);
 
+      // Define el objeto vacío seguro para data:
+      const emptyData = { bosses: [], quests: [], chares: [], notas: [] };
+
+      // Define el tipo correcto para loadedData
+      const loadedData: Record<
+        string,
+        { bosses: string[]; quests: string[]; chares: string[]; notas: string[] }
+      > = {};
+
       let loadedCheckedItems: CheckedItems = {};
-      const loadedData: Record<string, GuildMember["data"]> = {};
 
       if (snap.exists()) {
         const data = snap.data();
         loadedCheckedItems = data.checkedItems || {};
         const membersFromDb = data.allMembers || [];
         membersFromDb.forEach((m: GuildMember) => {
-          loadedData[m.name] = m.data || {};
+          if (
+            m.data &&
+            Array.isArray(m.data.bosses) &&
+            Array.isArray(m.data.quests) &&
+            Array.isArray(m.data.chares) &&
+            Array.isArray(m.data.notas)
+          ) {
+            loadedData[m.name] = m.data;
+          } else {
+            loadedData[m.name] = emptyData;
+          }
         });
       }
-
-      const emptyData = { bosses: [], quests: [], chares: [], notas: [] };
 
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
           try {
-            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(member.name)}`;
+            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(
+              member.name
+            )}`;
             const characterRes = await fetch(characterUrl);
             const characterData = await characterRes.json();
             const char = characterData.character.character;
@@ -85,7 +99,7 @@ const App: React.FC = () => {
                 time: d.time,
                 reason: d.reason,
               })),
-              data: loadedData[member.name] || emptyData,
+              data: loadedData[member.name] ?? emptyData,
             };
           } catch (e) {
             console.warn(`Error cargando personaje ${member.name}`, e);
@@ -96,7 +110,7 @@ const App: React.FC = () => {
               vocation: member.vocation,
               sex: "unknown",
               deaths: [],
-              data: loadedData[member.name] || emptyData,
+              data: loadedData[member.name] ?? emptyData,
             };
           }
         })
@@ -105,7 +119,7 @@ const App: React.FC = () => {
       setAllMembers(detailedMembers);
       setCheckedItems(loadedCheckedItems);
       setOriginalCheckedItems(loadedCheckedItems);
-      previousAllMembersRef.current = detailedMembers; // Guardar el estado inicial
+      previousAllMembersRef.current = detailedMembers;
     } catch (error) {
       setError("Error al cargar los datos de la guild.");
       setAllMembers([]);
@@ -153,10 +167,8 @@ const App: React.FC = () => {
         const nameMatches = member.name.toLowerCase().includes(filter);
         const dataMatches = Object.entries(member.data || {}).some(([section, items]) =>
           items.some((item) => {
-            // Usamos cast para que TS entienda que section es Tab
-            const sec = section as Tab;
-            const isChecked = checkedItems[member.name]?.[sec]?.[item] === true;
             const matches = item.toLowerCase().includes(filter);
+            const isChecked = checkedItems[member.name]?.[section]?.[item] === true;
             return matches && isChecked;
           })
         );
