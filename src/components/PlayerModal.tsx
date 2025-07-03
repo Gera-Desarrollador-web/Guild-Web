@@ -19,6 +19,9 @@ type Props = {
     setCheckedItems: React.Dispatch<React.SetStateAction<CheckedItems>>;
 };
 
+const tabs = ["bosses", "quests", "chares", "notas"] as const;
+type Tab = typeof tabs[number];
+
 const PlayerModal: React.FC<Props> = ({
     selectedPlayer,
     setSelectedPlayer,
@@ -27,16 +30,14 @@ const PlayerModal: React.FC<Props> = ({
     checkedItems,
     setCheckedItems,
 }) => {
-   
-
-    const tabs = ["bosses", "quests", "chares", "notas"] as const;
-    type Tab = typeof tabs[number];
+    // ✅ HOOKS AL PRINCIPIO, FUERA DE CONDICIONES
     const [activeTab, setActiveTab] = useState<Tab>("bosses");
     const [newItem, setNewItem] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
 
-       if (!selectedPlayer) return null;
-
+    // ❗️ Importante: salir del componente luego del hook
+    if (!selectedPlayer) return null;
+    
     const vocationGifs: { [key: string]: { [key: string]: string } } = {
         Knight: { male: "/Knight.gif", female: "/knightFemale.gif" },
         "Elite Knight": { male: "/Knight.gif", female: "/KnightFemale.gif" },
@@ -241,8 +242,8 @@ const PlayerModal: React.FC<Props> = ({
                                 <span className="font-bold">Status: </span>
                                 <span
                                     className={`${selectedPlayer.status.toLowerCase() === "online"
-                                            ? "text-green-600"
-                                            : "text-gray-700"
+                                        ? "text-green-600"
+                                        : "text-gray-700"
                                         }`}
                                 >
                                     {selectedPlayer.status}
