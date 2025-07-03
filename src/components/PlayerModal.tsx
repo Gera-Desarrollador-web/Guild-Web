@@ -42,6 +42,22 @@ const PlayerModal: React.FC<Props> = ({
 
     if (!selectedPlayer) return null;
 
+    
+    const vocationGifs: { [key: string]: string } = {
+        "Knight": "/public/knight.gif",
+        "Elite Knight": "/public/Knight.gif",
+        "Paladin": "/public/Hunter.gif",
+        "Royal Paladin": "/public/Hunter.gif",
+        "Sorcerer": "/public/Mage.gif",
+        "Master Sorcerer": "/public/Mage.gif",
+        "Druid": "/public/druid.gif",
+        "Elder Druid": "/public/druid.gif",
+        "Exalted Monk": "/public/Monk.gif", // Default or unknown vocation
+        "Monk": "/public/Monk.gif" // Default or unknown vocation
+    };
+    const vocationGifUrl = vocationGifs[selectedPlayer.vocation] || "https://media.giphy.com/media/ya4eevXU490Iw/giphy.gif";
+
+
     const close = () => setSelectedPlayer(null);
 
 
@@ -206,15 +222,25 @@ const PlayerModal: React.FC<Props> = ({
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white p-4 rounded shadow-lg w-[90%] max-w-xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 className="text-lg font-bold pb-1">{selectedPlayer.name}</h3>
-                        <p ><span className="font-bold">Lvl: </span>{selectedPlayer.level}</p>
-                        <p ><span className="font-bold">Vocation: </span>{selectedPlayer.vocation}</p>
-                        <p>
-                            <span className="font-bold">Status: </span><span className={` ${selectedPlayer.status.toLowerCase() === "online" ? "text-green-600" : "text-gray-700"
-                                }`}>{selectedPlayer.status}</span>
-                        </p>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h3 className="text-lg font-bold pb-1">{selectedPlayer.name}</h3>
+                            <p><span className="font-bold">Lvl: </span>{selectedPlayer.level}</p>
+                            <p><span className="font-bold">Vocation: </span>{selectedPlayer.vocation}</p>
+                            <p>
+                                <span className="font-bold">Status: </span>
+                                <span className={`${selectedPlayer.status.toLowerCase() === "online" ? "text-green-600" : "text-gray-700"}`}>
+                                    {selectedPlayer.status}
+                                </span>
+                            </p>
+                        </div>
+                        <img
+                            src={vocationGifUrl}
+                            alt="Vocation gif"
+                            className="w-20 h-20 ml-4 object-contain"
+                        />
                     </div>
+
                     <button
                         className="text-gray-600 hover:text-black self-start"
                         onClick={close}
