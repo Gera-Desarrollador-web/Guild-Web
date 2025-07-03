@@ -3,21 +3,15 @@ import GuildManager from "./components/GuildManager"; // Ajusta la ruta según t
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import isEqual from "lodash.isequal";
+import { GuildMember } from "./types"; 
 
-export type GuildMember = {
-  name: string;
-  level: number;
-  vocation: string;
-  status: string;
-  categories: {
-    [categoryName: string]: string[];
-  };
-};
+
 
 const App: React.FC = () => {
   const guildName = "Twenty Thieves";
 
   const [allMembers, setAllMembers] = useState<GuildMember[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showOnlyOnline, setShowOnlyOnline] = useState(false);
@@ -55,89 +49,104 @@ const App: React.FC = () => {
     }
   };
 
- const loadData = async () => {
-  setLoading(true);
-  setError("");
-  try {
-    // 1. Obtener miembros de la API
-    const url = `https://api.tibiadata.com/v4/guild/${encodeURIComponent(guildName)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const membersFromAPI: GuildMember[] = data.guild.members || [];
+  const loadData = async () => {
+    setLoading(true);
+    setError("");
 
-    // 2. Obtener categorías y checkedItems desde Firestore
-    const docRef = doc(db, "guilds", guildName);
-    const snap = await getDoc(docRef);
-    let loadedCategories: Record<string, GuildMember["categories"]> = {};
-    let loadedCheckedItems: {
-      [playerName: string]: {
-        [categoryName: string]: {
-          [itemName: string]: boolean;
-        };
-      };
-    } = {};
+    try {
+      // 1. Obtener miembros de la guild
+      const guildUrl = `https://api.tibiadata.com/v4/guild/${encodeURIComponent(guildName)}`;
+      const guildRes = await fetch(guildUrl);
+      const guildData = await guildRes.json();
+      const basicMembers = guildData.guild.members || [];
 
-    if (snap.exists()) {
-      const data = snap.data();
-      loadedCategories = data.categoriesData || {};
-      loadedCheckedItems = data.checkedItems || {};
+      // 2. Obtener categorías y checkedItems desde Firestore
+      const docRef = doc(db, "guilds", guildName);
+      const snap = await getDoc(docRef);
+      let loadedCategories: Record<string, GuildMember["categories"]> = {};
+      let loadedCheckedItems: typeof checkedItems = {};
+
+      if (snap.exists()) {
+        const data = snap.data();
+        loadedCategories = data.categoriesData || {};
+        loadedCheckedItems = data.checkedItems || {};
+      }
+
+      // 3. Obtener detalles individuales por personaje
+      const detailedMembers = await Promise.all(
+        basicMembers.map(async (member: any) => {
+          try {
+            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(member.name)}`;
+            const characterRes = await fetch(characterUrl);
+            const characterData = await characterRes.json();
+            const char = characterData.character.character;
+
+            return {
+              name: char.name,
+              status: member.status,
+              level: char.level || member.level,
+              vocation: char.vocation || member.vocation,
+              sex: char.sex || "unknown", // 👈 aquí añadimos sex
+              categories: loadedCategories[member.name] || {},
+            };
+          } catch (e) {
+            console.warn(`Error cargando personaje ${member.name}`, e);
+            return {
+              ...member,
+              sex: "unknown", // fallback si falla
+              categories: loadedCategories[member.name] || {},
+            };
+          }
+        })
+      );
+
+      // 4. Guardar estado
+      setAllMembers(detailedMembers);
+      setCheckedItems(loadedCheckedItems);
+      setOriginalCategories(loadedCategories);
+      setOriginalCheckedItems(loadedCheckedItems);
+    } catch (error) {
+      setError("Error al cargar los datos de la guild.");
+      setAllMembers([]);
+      setCheckedItems({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  function deepEqual(obj1: any, obj2: any): boolean {
+    return isEqual(obj1, obj2);
+  }
+
+
+  useEffect(() => {
+    if (skipSaveOnFirstLoad) {
+      setSkipSaveOnFirstLoad(false);
+      return; // 👈 evita guardar justo después de cargar
     }
 
-    // 3. Fusionar categorías guardadas con miembros de la API
-    const membersWithCategories = membersFromAPI.map(member => ({
-      ...member,
-      categories: loadedCategories[member.name] || {},
-    }));
+    if (!hasLoadedOnce || allMembers.length === 0) return;
 
-    // 4. Actualizar estados
-    setAllMembers(membersWithCategories);
-    setCheckedItems(loadedCheckedItems);
+    const currentCategories = allMembers.reduce((acc, member) => {
+      acc[member.name] = member.categories || {};
+      return acc;
+    }, {} as Record<string, GuildMember["categories"]>);
 
-    // 5. Guardar snapshot original para comparaciones futuras
-    setOriginalCategories(loadedCategories);
-    setOriginalCheckedItems(loadedCheckedItems);
+    const categoriesChanged = !deepEqual(currentCategories, originalCategories);
+    const checkedItemsChanged = !deepEqual(checkedItems, originalCheckedItems);
 
-    setLoading(false);
-  } catch (error) {
-    setError("Error al cargar los datos de la guild.");
-    setAllMembers([]);
-    setCheckedItems({});
-    setLoading(false);
-  }
-};
-function deepEqual(obj1: any, obj2: any): boolean {
-  return isEqual(obj1, obj2);
-}
+    if (categoriesChanged || checkedItemsChanged) {
+      saveDataToFirestore();
+
+      setOriginalCategories(currentCategories);
+      setOriginalCheckedItems(checkedItems);
+    }
+  }, [allMembers, checkedItems, hasLoadedOnce]);
 
 
-useEffect(() => {
-  if (skipSaveOnFirstLoad) {
-    setSkipSaveOnFirstLoad(false);
-    return; // 👈 evita guardar justo después de cargar
-  }
-
-  if (!hasLoadedOnce || allMembers.length === 0) return;
-
-  const currentCategories = allMembers.reduce((acc, member) => {
-    acc[member.name] = member.categories || {};
-    return acc;
-  }, {} as Record<string, GuildMember["categories"]>);
-
-  const categoriesChanged = !deepEqual(currentCategories, originalCategories);
-  const checkedItemsChanged = !deepEqual(checkedItems, originalCheckedItems);
-
-  if (categoriesChanged || checkedItemsChanged) {
-    saveDataToFirestore();
-
-    setOriginalCategories(currentCategories);
-    setOriginalCheckedItems(checkedItems);
-  }
-}, [allMembers, checkedItems, hasLoadedOnce]);
-
-
-useEffect(() => {
-  loadData().then(() => setHasLoadedOnce(true));
-}, []);
+  useEffect(() => {
+    loadData().then(() => setHasLoadedOnce(true));
+  }, []);
 
 
   const filteredMembers = useMemo(() => {

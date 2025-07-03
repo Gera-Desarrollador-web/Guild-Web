@@ -42,21 +42,54 @@ const PlayerModal: React.FC<Props> = ({
 
     if (!selectedPlayer) return null;
 
-    
-   const vocationGifs: { [key: string]: string } = {
-    "Knight": "/knight.gif",
-    "Elite Knight": "/Knight.gif",
-    "Paladin": "/Hunter.gif",
-    "Royal Paladin": "/Hunter.gif",
-    "Sorcerer": "/Mage.gif",
-    "Master Sorcerer": "/Mage.gif",
-    "Druid": "/druid.gif",
-    "Elder Druid": "/druid.gif",
-    "Exalted Monk": "/Monk.gif",
-    "Monk": "/Monk.gif"
-};
 
-    const vocationGifUrl = vocationGifs[selectedPlayer.vocation] || "https://media.giphy.com/media/ya4eevXU490Iw/giphy.gif";
+    const vocationGifs: { [key: string]: { [key: string]: string } } = {
+        "Knight": {
+            male: "/Knight.gif",
+            female: "/knightFemale.gif",
+        },
+        "Elite Knight": {
+            male: "/Knight.gif",
+            female: "/KnightFemale.gif",
+        },
+        "Paladin": {
+            male: "/Hunter.gif",
+            female: "/HunterFemale.gif",
+        },
+        "Royal Paladin": {
+            male: "/Hunter.gif",
+            female: "/HunterFemale.gif",
+        },
+        "Sorcerer": {
+            male: "/Mage.gif",
+            female: "/MageFemale.gif",
+        },
+        "Master Sorcerer": {
+            male: "/Mage.gif",
+            female: "/MageFemale.gif",
+        },
+        "Druid": {
+            male: "/Druid.gif",
+            female: "druidFemale.gif",
+        },
+        "Elder Druid": {
+             male: "/Druid.gif",
+            female: "druidFemale.gif",
+        },
+        "Monk": {
+            male: "Monk.gif",
+            female: "MonkFemale.gif",
+        },
+        "Exalted Monk": {
+           male: "Monk.gif",
+            female: "MonkFemale.gif",
+        }
+    };
+
+
+    const vocationGifUrl =
+        vocationGifs[selectedPlayer.vocation]?.[selectedPlayer.sex.toLowerCase()] ||
+        "https://media.giphy.com/media/ya4eevXU490Iw/giphy.gif";
 
 
     const close = () => setSelectedPlayer(null);
