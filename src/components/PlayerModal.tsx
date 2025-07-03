@@ -295,7 +295,7 @@ const PlayerModal: React.FC<Props> = ({
                                 : "murió varias veces recientemente:"}
                         </h4>
                         <ul className="space-y-1 text-sm max-h-20 overflow-y-auto">
-                            {selectedPlayer.deaths.map((death, idx) => (
+                            {selectedPlayer.deaths?.map((death, idx) => (
                                 <li key={idx} className="border-b pb-1">
                                     <div className="text-gray-700">
                                         <span className="font-semibold">Nivel:</span> {death.level}
