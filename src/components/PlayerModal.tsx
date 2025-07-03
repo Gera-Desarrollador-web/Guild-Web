@@ -116,12 +116,9 @@ const PlayerModal: React.FC<Props> = ({
         setAllMembers(updatedMembers);
 
         // Si quieres que el selectedPlayer refleje el cambio inmediatamente
-       setSelectedPlayer(
-  selectedPlayer
-    ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
-    : null
-);
-
+        if (selectedPlayer) {
+            setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
+        }
 
         setNewCategoryName("");
     };
@@ -130,7 +127,7 @@ const PlayerModal: React.FC<Props> = ({
     const removeCategory = (category: string) => {
         // Verificar si la categoría contiene ítems en algún miembro
         const hasItemsInAnyMember = allMembers.some(
-            (member) => member.categories?.[category]?.length > 0
+            (member) => (member.categories?.[category]?.length ?? 0) > 0
         );
         if (hasItemsInAnyMember) {
             alert("No se puede eliminar esta categoría porque contiene elementos en al menos un miembro.");
@@ -155,12 +152,7 @@ const PlayerModal: React.FC<Props> = ({
         setCheckedItems(updatedCheckedItems);
 
         // Actualizar selectedPlayer si corresponde
-        setSelectedPlayer(
-            selectedPlayer
-                ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
-                : null
-        );
-
+        setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
     };
 
 
@@ -199,12 +191,9 @@ const PlayerModal: React.FC<Props> = ({
         setNewItems(prev => ({ ...prev, [category]: "" }));
 
         // Actualizar selectedPlayer si está seleccionado
-        setSelectedPlayer(
-            selectedPlayer
-                ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
-                : null
-        );
-
+        if (selectedPlayer) {
+            setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
+        }
     };
 
 
@@ -241,12 +230,7 @@ const PlayerModal: React.FC<Props> = ({
         setCheckedItems(updatedCheckedItems);
 
         // Actualizar selectedPlayer si corresponde
-        setSelectedPlayer(
-            selectedPlayer
-                ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
-                : null
-        );
-
+        setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
     };
 
     const toggleCheckItem = (playerName: string, category: string, item: string) => {
