@@ -43,18 +43,19 @@ const PlayerModal: React.FC<Props> = ({
     if (!selectedPlayer) return null;
 
     
-    const vocationGifs: { [key: string]: string } = {
-        "Knight": "/public/knight.gif",
-        "Elite Knight": "/public/Knight.gif",
-        "Paladin": "/public/Hunter.gif",
-        "Royal Paladin": "/public/Hunter.gif",
-        "Sorcerer": "/public/Mage.gif",
-        "Master Sorcerer": "/public/Mage.gif",
-        "Druid": "/public/druid.gif",
-        "Elder Druid": "/public/druid.gif",
-        "Exalted Monk": "/public/Monk.gif", // Default or unknown vocation
-        "Monk": "/public/Monk.gif" // Default or unknown vocation
-    };
+   const vocationGifs: { [key: string]: string } = {
+    "Knight": "/knight.gif",
+    "Elite Knight": "/Knight.gif",
+    "Paladin": "/Hunter.gif",
+    "Royal Paladin": "/Hunter.gif",
+    "Sorcerer": "/Mage.gif",
+    "Master Sorcerer": "/Mage.gif",
+    "Druid": "/druid.gif",
+    "Elder Druid": "/druid.gif",
+    "Exalted Monk": "/Monk.gif",
+    "Monk": "/Monk.gif"
+};
+
     const vocationGifUrl = vocationGifs[selectedPlayer.vocation] || "https://media.giphy.com/media/ya4eevXU490Iw/giphy.gif";
 
 
