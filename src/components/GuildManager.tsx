@@ -35,7 +35,7 @@ type Props = {
             };
         }>
     >;
-  
+
 };
 
 const GuildManager: React.FC<Props> = ({
@@ -54,7 +54,7 @@ const GuildManager: React.FC<Props> = ({
     setSelectedPlayer,
     checkedItems,
     setCheckedItems,
-    
+
 }) => {
     return (
         <div>
@@ -94,7 +94,8 @@ const GuildManager: React.FC<Props> = ({
                     setAllMembers={setAllMembers}
                     checkedItems={checkedItems}
                     setCheckedItems={setCheckedItems}
-                    
+
+
                 />
             )}
         </div>
