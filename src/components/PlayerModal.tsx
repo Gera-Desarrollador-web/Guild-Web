@@ -116,9 +116,12 @@ const PlayerModal: React.FC<Props> = ({
         setAllMembers(updatedMembers);
 
         // Si quieres que el selectedPlayer refleje el cambio inmediatamente
-        if (selectedPlayer) {
-            setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
-        }
+       setSelectedPlayer(
+  selectedPlayer
+    ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
+    : null
+);
+
 
         setNewCategoryName("");
     };
@@ -152,7 +155,12 @@ const PlayerModal: React.FC<Props> = ({
         setCheckedItems(updatedCheckedItems);
 
         // Actualizar selectedPlayer si corresponde
-        setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
+        setSelectedPlayer(
+            selectedPlayer
+                ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
+                : null
+        );
+
     };
 
 
@@ -191,9 +199,12 @@ const PlayerModal: React.FC<Props> = ({
         setNewItems(prev => ({ ...prev, [category]: "" }));
 
         // Actualizar selectedPlayer si está seleccionado
-        if (selectedPlayer) {
-            setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
-        }
+        setSelectedPlayer(
+            selectedPlayer
+                ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
+                : null
+        );
+
     };
 
 
@@ -230,7 +241,12 @@ const PlayerModal: React.FC<Props> = ({
         setCheckedItems(updatedCheckedItems);
 
         // Actualizar selectedPlayer si corresponde
-        setSelectedPlayer(updatedMembers.find(m => m.name === selectedPlayer.name) || null);
+        setSelectedPlayer(
+            selectedPlayer
+                ? updatedMembers.find(m => m.name === selectedPlayer.name) || null
+                : null
+        );
+
     };
 
     const toggleCheckItem = (playerName: string, category: string, item: string) => {
@@ -251,8 +267,6 @@ const PlayerModal: React.FC<Props> = ({
             };
         });
     };
-
-    if (!selectedPlayer) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
@@ -297,7 +311,7 @@ const PlayerModal: React.FC<Props> = ({
                                 : "murió varias veces recientemente:"}
                         </h4>
                         <ul className="space-y-1 text-sm max-h-20 overflow-y-auto">
-                            {selectedPlayer.deaths?.map((death, idx) => (
+                            {selectedPlayer.deaths.map((death, idx) => (
                                 <li key={idx} className="border-b pb-1">
                                     <div className="text-gray-700">
                                         <span className="font-semibold">Nivel:</span> {death.level}
