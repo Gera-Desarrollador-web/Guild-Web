@@ -256,7 +256,8 @@ const PlayerModal: React.FC<Props> = ({
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white p-4 rounded shadow-lg w-[90%] max-w-xl max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="flex justify-between items-start">
+                    {/* Sección izquierda: texto y gif */}
+                    <div className="flex">
                         <div>
                             <h3 className="text-lg font-bold pb-1">{selectedPlayer.name}</h3>
                             <p><span className="font-bold">Lvl: </span>{selectedPlayer.level}</p>
@@ -268,37 +269,13 @@ const PlayerModal: React.FC<Props> = ({
                                 </span>
                             </p>
                         </div>
+
                         <img
                             src={vocationGifUrl}
                             alt="Vocation gif"
-                            className="w-20 h-20 mr-6 object-contain"
+                            className="w-20 h-20 ml-4 object-contain"
                         />
-                        {selectedPlayer.deaths && selectedPlayer.deaths.length > 0 && (
-                            <div className="bg-white ml-1 w-full sm:w-[90%] md:w-[80%] lg:w-[70%] xl:w-[60%] max-w-3xl max-h-[90vh]  overflow-y-auto">
-
-                                <h4 className="text-md font-bold mb-2">
-                                    {selectedPlayer.deaths.length === 1 ? "murió recientemente:" : "murió varias veces recientemente:"}
-                                </h4>
-                                <ul className="space-y-1 text-sm max-h-20 overflow-y-auto">
-                                    {selectedPlayer.deaths.map((death, idx) => (
-                                        <li key={idx} className="border-b pb-1">
-                                            <div className="text-gray-700">
-                                                <span className="font-semibold">Nivel:</span> {death.level}
-                                            </div>
-                                            <div className="text-gray-700">
-                                                <span className="font-semibold">Fecha:</span> {new Date(death.time).toLocaleString()}
-                                            </div>
-                                            <div className="text-gray-700">
-                                                <span className="font-semibold">Razón:</span> {death.reason}
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
                     </div>
-
-
 
                     <button
                         className="text-gray-600 hover:text-black self-start"
@@ -308,6 +285,34 @@ const PlayerModal: React.FC<Props> = ({
                         ✕
                     </button>
                 </div>
+
+                {/* Sección de muertes - abajo del header */}
+                {selectedPlayer.deaths && selectedPlayer.deaths.length > 0 && (
+                    <div className="bg-white mb-4">
+                        <h4 className="text-md font-bold mb-2">
+                            {selectedPlayer.deaths.length === 1
+                                ? "murió recientemente:"
+                                : "murió varias veces recientemente:"}
+                        </h4>
+                        <ul className="space-y-1 text-sm max-h-20 overflow-y-auto">
+                            {selectedPlayer.deaths.map((death, idx) => (
+                                <li key={idx} className="border-b pb-1">
+                                    <div className="text-gray-700">
+                                        <span className="font-semibold">Nivel:</span> {death.level}
+                                    </div>
+                                    <div className="text-gray-700">
+                                        <span className="font-semibold">Fecha:</span>{" "}
+                                        {new Date(death.time).toLocaleString()}
+                                    </div>
+                                    <div className="text-gray-700">
+                                        <span className="font-semibold">Razón:</span> {death.reason}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
 
                 <AddCategoryForm
                     newCategoryName={newCategoryName}
