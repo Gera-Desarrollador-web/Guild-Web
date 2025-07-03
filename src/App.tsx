@@ -5,6 +5,9 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import isEqual from "lodash.isequal";
 import { GuildMember, CheckedItems } from "./types";
 
+const tabs = ["bosses", "quests", "chares", "notas"] as const;
+type Tab = typeof tabs[number];
+
 const App: React.FC = () => {
   const guildName = "Twenty Thieves";
 
@@ -60,6 +63,8 @@ const App: React.FC = () => {
         });
       }
 
+      const emptyData = { bosses: [], quests: [], chares: [], notas: [] };
+
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
           try {
@@ -80,12 +85,7 @@ const App: React.FC = () => {
                 time: d.time,
                 reason: d.reason,
               })),
-              data: loadedData[member.name] || {
-                bosses: [],
-                quests: [],
-                chares: [],
-                notas: [],
-              },
+              data: loadedData[member.name] || emptyData,
             };
           } catch (e) {
             console.warn(`Error cargando personaje ${member.name}`, e);
@@ -96,12 +96,7 @@ const App: React.FC = () => {
               vocation: member.vocation,
               sex: "unknown",
               deaths: [],
-              data: loadedData[member.name] || {
-                bosses: [],
-                quests: [],
-                chares: [],
-                notas: [],
-              },
+              data: loadedData[member.name] || emptyData,
             };
           }
         })
@@ -158,8 +153,10 @@ const App: React.FC = () => {
         const nameMatches = member.name.toLowerCase().includes(filter);
         const dataMatches = Object.entries(member.data || {}).some(([section, items]) =>
           items.some((item) => {
+            // Usamos cast para que TS entienda que section es Tab
+            const sec = section as Tab;
+            const isChecked = checkedItems[member.name]?.[sec]?.[item] === true;
             const matches = item.toLowerCase().includes(filter);
-            const isChecked = checkedItems[member.name]?.[section]?.[item] === true;
             return matches && isChecked;
           })
         );
@@ -195,7 +192,6 @@ const App: React.FC = () => {
         setSelectedPlayer={setSelectedPlayer}
         checkedItems={checkedItems}
         setCheckedItems={setCheckedItems}
-       
       />
     </div>
   );
