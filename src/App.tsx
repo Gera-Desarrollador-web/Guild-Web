@@ -3,7 +3,7 @@ import GuildManager from "./components/GuildManager"; // Ajusta la ruta según t
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import isEqual from "lodash.isequal";
-import { GuildMember } from "./types"; 
+import { GuildMember } from "./types";
 
 
 
@@ -80,15 +80,22 @@ const App: React.FC = () => {
             const characterRes = await fetch(characterUrl);
             const characterData = await characterRes.json();
             const char = characterData.character.character;
+            const deaths = characterData.character.deaths || [];
 
             return {
               name: char.name,
               status: member.status,
               level: char.level || member.level,
               vocation: char.vocation || member.vocation,
-              sex: char.sex || "unknown", // 👈 aquí añadimos sex
+              sex: char.sex?.toLowerCase() === "female" ? "female" : "male",
+              deaths: deaths.map((d: any) => ({
+                level: d.level,
+                time: d.time,
+                reason: d.reason,
+              })),
               categories: loadedCategories[member.name] || {},
             };
+
           } catch (e) {
             console.warn(`Error cargando personaje ${member.name}`, e);
             return {

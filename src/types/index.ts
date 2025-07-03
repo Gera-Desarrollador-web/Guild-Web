@@ -1,10 +1,17 @@
+type DeathEntry = {
+  level: number;
+  time: string;
+  reason: string;
+};
+
 export type GuildMember = {
   name: string;
   level: number;
   vocation: string;
-   sex: string; 
   status: string;
-  categories: {
+  sex: "male" | "female";
+  deaths?: DeathEntry[];
+  categories?: {
     [categoryName: string]: string[];
   };
 };
