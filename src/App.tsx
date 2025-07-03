@@ -30,6 +30,11 @@ const App: React.FC = () => {
       };
     };
   }>({});
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [originalCategories, setOriginalCategories] = useState<Record<string, GuildMember["categories"]>>({});
+  const [originalCheckedItems, setOriginalCheckedItems] = useState<typeof checkedItems>({});
+
+
 
   const saveDataToFirestore = async () => {
     try {
@@ -61,15 +66,14 @@ const App: React.FC = () => {
     // 2. Obtener categorías y checkedItems desde Firestore
     const docRef = doc(db, "guilds", guildName);
     const snap = await getDoc(docRef);
-   let loadedCategories: Record<string, GuildMember["categories"]> = {};
+    let loadedCategories: Record<string, GuildMember["categories"]> = {};
     let loadedCheckedItems: {
-  [playerName: string]: {
-    [categoryName: string]: {
-      [itemName: string]: boolean;
-    };
-  };
-} = {};
-
+      [playerName: string]: {
+        [categoryName: string]: {
+          [itemName: string]: boolean;
+        };
+      };
+    } = {};
 
     if (snap.exists()) {
       const data = snap.data();
@@ -86,6 +90,11 @@ const App: React.FC = () => {
     // 4. Actualizar estados
     setAllMembers(membersWithCategories);
     setCheckedItems(loadedCheckedItems);
+
+    // 5. Guardar snapshot original para comparaciones futuras
+    setOriginalCategories(loadedCategories);
+    setOriginalCheckedItems(loadedCheckedItems);
+
     setLoading(false);
   } catch (error) {
     setError("Error al cargar los datos de la guild.");
@@ -94,17 +103,34 @@ const App: React.FC = () => {
     setLoading(false);
   }
 };
+function deepEqual(obj1: any, obj2: any): boolean {
+  return JSON.stringify(obj1) === JSON.stringify(obj2);
+}
 
 
 
 useEffect(() => {
-  loadData();
-}, []);
-
-useEffect(() => {
+  if (!hasLoadedOnce) return;
   if (allMembers.length === 0) return;
-  saveDataToFirestore(); // Guardar automáticamente cuando cambien
-}, [allMembers, checkedItems]);
+
+  // Extraemos las categorías actuales de allMembers
+  const currentCategories = allMembers.reduce((acc, member) => {
+    acc[member.name] = member.categories || {};
+    return acc;
+  }, {} as Record<string, GuildMember["categories"]>);
+
+  const categoriesChanged = !deepEqual(currentCategories, originalCategories);
+  const checkedItemsChanged = !deepEqual(checkedItems, originalCheckedItems);
+
+  if (categoriesChanged || checkedItemsChanged) {
+    saveDataToFirestore();
+
+    // Actualizamos snapshot original para no guardar repetidamente
+    setOriginalCategories(currentCategories);
+    setOriginalCheckedItems(checkedItems);
+  }
+}, [allMembers, checkedItems, hasLoadedOnce]);
+
 
   const filteredMembers = useMemo(() => {
     let members = showOnlyOnline
@@ -112,22 +138,22 @@ useEffect(() => {
       : [...allMembers];
 
     if (questFilter.trim()) {
-  const filter = questFilter.toLowerCase();
-  members = members.filter((member) => {
-    const nameMatches = member.name.toLowerCase().includes(filter);
+      const filter = questFilter.toLowerCase();
+      members = members.filter((member) => {
+        const nameMatches = member.name.toLowerCase().includes(filter);
 
-    const itemsMatch = Object.entries(member.categories || {}).some(
-      ([cat, items]) =>
-        items.some((item) => {
-          const matchesFilter = item.toLowerCase().includes(filter);
-          const isChecked = checkedItems[member.name]?.[cat]?.[item] === true;
-          return matchesFilter && isChecked;
-        })
-    );
+        const itemsMatch = Object.entries(member.categories || {}).some(
+          ([cat, items]) =>
+            items.some((item) => {
+              const matchesFilter = item.toLowerCase().includes(filter);
+              const isChecked = checkedItems[member.name]?.[cat]?.[item] === true;
+              return matchesFilter && isChecked;
+            })
+        );
 
-    return nameMatches || itemsMatch;
-  });
-}
+        return nameMatches || itemsMatch;
+      });
+    }
 
 
     members.sort((a, b) => {
@@ -142,7 +168,7 @@ useEffect(() => {
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
-    
+
       <GuildManager
         allMembers={allMembers}
         setAllMembers={setAllMembers}
@@ -159,7 +185,7 @@ useEffect(() => {
         setSelectedPlayer={setSelectedPlayer}
         checkedItems={checkedItems}
         setCheckedItems={setCheckedItems}
-        
+
       />
     </div>
   );
