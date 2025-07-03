@@ -44,12 +44,7 @@ const PlayerModal: React.FC<Props> = ({
 
     const close = () => setSelectedPlayer(null);
 
-    const updatePlayer = (updated: GuildMember) => {
-        setAllMembers((prev) =>
-            prev.map((m) => (m.name === updated.name ? updated : m))
-        );
-        setSelectedPlayer(updated);
-    };
+
 
     const addCategory = () => {
     if (!newCategoryName.trim()) return;

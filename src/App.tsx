@@ -61,8 +61,15 @@ const App: React.FC = () => {
     // 2. Obtener categorías y checkedItems desde Firestore
     const docRef = doc(db, "guilds", guildName);
     const snap = await getDoc(docRef);
-    let loadedCategories = {};
-    let loadedCheckedItems = {};
+   let loadedCategories: Record<string, GuildMember["categories"]> = {};
+    let loadedCheckedItems: {
+  [playerName: string]: {
+    [categoryName: string]: {
+      [itemName: string]: boolean;
+    };
+  };
+} = {};
+
 
     if (snap.exists()) {
       const data = snap.data();
