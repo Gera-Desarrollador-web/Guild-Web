@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import GuildManager from "./components/GuildManager"; // Ajusta la ruta según tu estructura
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+import isEqual from "lodash.isequal";
 
 export type GuildMember = {
   name: string;
@@ -33,6 +34,7 @@ const App: React.FC = () => {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [originalCategories, setOriginalCategories] = useState<Record<string, GuildMember["categories"]>>({});
   const [originalCheckedItems, setOriginalCheckedItems] = useState<typeof checkedItems>({});
+  const [skipSaveOnFirstLoad, setSkipSaveOnFirstLoad] = useState(true);
 
 
 
@@ -104,16 +106,18 @@ const App: React.FC = () => {
   }
 };
 function deepEqual(obj1: any, obj2: any): boolean {
-  return JSON.stringify(obj1) === JSON.stringify(obj2);
+  return isEqual(obj1, obj2);
 }
 
 
-
 useEffect(() => {
-  if (!hasLoadedOnce) return;
-  if (allMembers.length === 0) return;
+  if (skipSaveOnFirstLoad) {
+    setSkipSaveOnFirstLoad(false);
+    return; // 👈 evita guardar justo después de cargar
+  }
 
-  // Extraemos las categorías actuales de allMembers
+  if (!hasLoadedOnce || allMembers.length === 0) return;
+
   const currentCategories = allMembers.reduce((acc, member) => {
     acc[member.name] = member.categories || {};
     return acc;
@@ -125,11 +129,15 @@ useEffect(() => {
   if (categoriesChanged || checkedItemsChanged) {
     saveDataToFirestore();
 
-    // Actualizamos snapshot original para no guardar repetidamente
     setOriginalCategories(currentCategories);
     setOriginalCheckedItems(checkedItems);
   }
 }, [allMembers, checkedItems, hasLoadedOnce]);
+
+
+useEffect(() => {
+  loadData().then(() => setHasLoadedOnce(true));
+}, []);
 
 
   const filteredMembers = useMemo(() => {
