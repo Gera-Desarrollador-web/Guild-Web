@@ -47,10 +47,8 @@ const App: React.FC = () => {
       const docRef = doc(db, "guilds", guildName);
       const snap = await getDoc(docRef);
 
-      // Define el objeto vacío seguro para data:
       const emptyData = { bosses: [], quests: [], chares: [], notas: [] };
 
-      // Define el tipo correcto para loadedData
       const loadedData: Record<
         string,
         { bosses: string[]; quests: string[]; chares: string[]; notas: string[] }
@@ -156,6 +154,9 @@ const App: React.FC = () => {
     }
   }, [allMembers, checkedItems, hasLoadedOnce]);
 
+  // CORRECCIÓN: Validamos claves válidas para evitar error TS7053
+  const validSections = ["bosses", "quests", "chares", "notas"] as const;
+
   const filteredMembers = useMemo(() => {
     let members = showOnlyOnline
       ? allMembers.filter((m) => m.status.toLowerCase() === "online")
@@ -163,15 +164,23 @@ const App: React.FC = () => {
 
     if (questFilter.trim()) {
       const filter = questFilter.toLowerCase();
+
       members = members.filter((member) => {
         const nameMatches = member.name.toLowerCase().includes(filter);
-        const dataMatches = Object.entries(member.data || {}).some(([section, items]) =>
-          items.some((item) => {
+
+        const dataMatches = Object.entries(member.data || {}).some(([section, items]) => {
+          if (!validSections.includes(section as typeof validSections[number])) return false;
+
+          const sectionKey = section as typeof validSections[number];
+          const itemsArray = items as string[];
+
+          return itemsArray.some((item) => {
             const matches = item.toLowerCase().includes(filter);
-            const isChecked = checkedItems[member.name]?.[section]?.[item] === true;
+            const isChecked = checkedItems[member.name]?.[sectionKey]?.[item] === true;
             return matches && isChecked;
-          })
-        );
+          });
+        });
+
         return nameMatches || dataMatches;
       });
     }
