@@ -196,7 +196,8 @@ const App: React.FC = () => {
   }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems]);
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
+    <div className="p-4 max-w-7xl mx-auto ">
+      
       <GuildManager
         allMembers={allMembers}
         setAllMembers={setAllMembers}

@@ -26,7 +26,6 @@ const GuildTableHeader: React.FC<Props> = ({
 }) => {
     return (
         <>
-            <h1 className="text-3xl font-bold mb-4 text-center">Miembros de Twenty Thieves</h1>
             <div className="flex text-center text-gray-700 mb-4 items-center justify-center gap-4">
                 <h2 className="text-black">Total: {totalMembers}</h2>
                 <p className="text-green-600">Online: {onlineCount}</p>

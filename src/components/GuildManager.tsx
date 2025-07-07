@@ -3,7 +3,7 @@ import { GuildMember } from "../types";
 import GuildTableHeader from "./GuildTableHeader";
 import GuildMembersTable from "./GuildMembersTable";
 import PlayerModal from "./PlayerModal";
-
+import GuildTitle from "./GuildTitle";
 
 type Props = {
     allMembers: GuildMember[];
@@ -57,7 +57,8 @@ const GuildManager: React.FC<Props> = ({
 
 }) => {
     return (
-        <div>
+        <div >
+            <GuildTitle />
             <GuildTableHeader
                 totalMembers={allMembers.length}
                 onlineCount={allMembers.filter(m => m.status.toLowerCase() === "online").length}
