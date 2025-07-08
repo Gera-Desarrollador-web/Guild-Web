@@ -393,6 +393,10 @@ const PlayerModal: React.FC<Props> = ({
         );
     };
 
+    const typedCurrentList = activeTab === "bosses"
+        ? (currentList as BossEntry[])
+        : (currentList as string[]);
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 ">
             <div className="bg-white p-4 rounded shadow-lg w-[90%] max-w-xl max-h-[90vh] overflow-y-auto">
@@ -411,14 +415,20 @@ const PlayerModal: React.FC<Props> = ({
                             <p>
                                 <span className="font-bold">Status: </span>
                                 <span
-                                    className={`${selectedPlayer.status.toLowerCase() === "online" ? "text-green-600" : "text-gray-700"
+                                    className={`${selectedPlayer.status.toLowerCase() === "online"
+                                            ? "text-green-600"
+                                            : "text-gray-700"
                                         }`}
                                 >
                                     {selectedPlayer.status}
                                 </span>
                             </p>
                         </div>
-                        <img src={vocationGifUrl} alt="Vocation gif" className="w-20 h-20 ml-4 object-contain" />
+                        <img
+                            src={vocationGifUrl}
+                            alt="Vocation gif"
+                            className="w-20 h-20 ml-4 object-contain"
+                        />
                     </div>
                     <button
                         className="text-gray-600 hover:text-black self-start"
@@ -432,7 +442,9 @@ const PlayerModal: React.FC<Props> = ({
                 {selectedPlayer.deaths && selectedPlayer.deaths.length > 0 && (
                     <div className="bg-white mb-4">
                         <h4 className="text-md font-bold mb-2">
-                            {selectedPlayer.deaths.length === 1 ? "murió recientemente:" : "murió varias veces recientemente:"}
+                            {selectedPlayer.deaths.length === 1
+                                ? "murió recientemente:"
+                                : "murió varias veces recientemente:"}
                         </h4>
                         <ul className="space-y-1 text-sm max-h-20 overflow-y-auto">
                             {selectedPlayer.deaths.map((death, idx) => (
@@ -441,7 +453,8 @@ const PlayerModal: React.FC<Props> = ({
                                         <span className="font-semibold">Nivel:</span> {death.level}
                                     </div>
                                     <div className="text-gray-700">
-                                        <span className="font-semibold">Fecha:</span> {new Date(death.time).toLocaleString()}
+                                        <span className="font-semibold">Fecha:</span>{" "}
+                                        {new Date(death.time).toLocaleString()}
                                     </div>
                                     <div className="text-gray-700">
                                         <span className="font-semibold">Razón:</span> {death.reason}
@@ -472,14 +485,17 @@ const PlayerModal: React.FC<Props> = ({
 
                 {/* Lista de ítems con checkboxes y subitems */}
                 <ul className="mb-2 max-h-64 overflow-y-auto">
-                    {activeTab === "bosses" && Array.isArray(currentList) && typeof currentList[0] === "object"
-                        ? (currentList as BossEntry[]).map((boss, index) => (
+                    {activeTab === "bosses"
+                        ? typedCurrentList.map((boss, index) => (
                             <li key={index} className="border-b py-1">
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center space-x-2">
                                         <input
                                             type="checkbox"
-                                            checked={checkedItems[selectedPlayer.name]?.bosses?.[boss.name] || false}
+                                            checked={
+                                                checkedItems[selectedPlayer.name]?.bosses?.[boss.name] ||
+                                                false
+                                            }
                                             onChange={(e) => {
                                                 setCheckedItems((prev) => ({
                                                     ...prev,
@@ -507,12 +523,17 @@ const PlayerModal: React.FC<Props> = ({
                                 {/* Subitems */}
                                 <ul className="ml-6 mb-2">
                                     {boss.subItems.map((sub, subIndex) => (
-                                        <li key={subIndex} className="flex justify-between items-center">
+                                        <li
+                                            key={subIndex}
+                                            className="flex justify-between items-center"
+                                        >
                                             <div className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
                                                     checked={
-                                                        checkedItems[selectedPlayer.name]?.bosses?.[`${boss.name}::${sub}`] || false
+                                                        checkedItems[selectedPlayer.name]?.bosses?.[
+                                                        `${boss.name}::${sub}`
+                                                        ] || false
                                                     }
                                                     onChange={(e) => {
                                                         setCheckedItems((prev) => ({
@@ -541,16 +562,25 @@ const PlayerModal: React.FC<Props> = ({
                                 </ul>
 
                                 {/* Input para agregar subitems */}
-                                <AddSubItemInput bossName={boss.name} addSubItemToBoss={addSubItemToBoss} />
+                                <AddSubItemInput
+                                    bossName={boss.name}
+                                    addSubItemToBoss={addSubItemToBoss}
+                                />
                             </li>
                         ))
-                        : currentList.map((item: string, index: number) => (
-                            <li key={index} className="flex justify-between items-center border-b py-1">
+                        : typedCurrentList.map((item, index) => (
+                            <li
+                                key={index}
+                                className="flex justify-between items-center border-b py-1"
+                            >
                                 <div className="flex items-center space-x-2">
                                     {activeTab === "quests" && (
                                         <input
                                             type="checkbox"
-                                            checked={checkedItems[selectedPlayer.name]?.[activeTab]?.[item] || false}
+                                            checked={
+                                                checkedItems[selectedPlayer.name]?.[activeTab]?.[item] ||
+                                                false
+                                            }
                                             onChange={(e) => {
                                                 setCheckedItems((prev) => ({
                                                     ...prev,
@@ -579,7 +609,10 @@ const PlayerModal: React.FC<Props> = ({
                                         <span>{item}</span>
                                     )}
                                 </div>
-                                <button onClick={() => removeItem(item)} className="text-red-500 hover:underline text-sm">
+                                <button
+                                    onClick={() => removeItem(item)}
+                                    className="text-red-500 hover:underline text-sm"
+                                >
                                     Eliminar
                                 </button>
                             </li>
@@ -608,7 +641,10 @@ const PlayerModal: React.FC<Props> = ({
                             }
                         }}
                     />
-                    <button onClick={addItem} className="bg-green-500 text-white px-3 py-1 rounded">
+                    <button
+                        onClick={addItem}
+                        className="bg-green-500 text-white px-3 py-1 rounded"
+                    >
                         Agregar
                     </button>
                 </div>
@@ -617,6 +653,7 @@ const PlayerModal: React.FC<Props> = ({
             {showSuggestions && filteredSuggestions.length > 0 && <SuggestionsPortal />}
         </div>
     );
+
 };
 
 export default PlayerModal;

@@ -176,8 +176,8 @@ const App: React.FC = () => {
     }
   }, [allMembers, checkedItems, hasLoadedOnce]);
 
-  // CORRECCIÓN: Validamos claves válidas para evitar error TS7053
-  const validSections = ["bosses", "quests", "chares", "notas"] as const;
+
+ 
 
   const filteredMembers = useMemo(() => {
     let members = showOnlyOnline
