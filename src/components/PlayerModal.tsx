@@ -37,6 +37,17 @@ const PlayerModal: React.FC<Props> = ({
     const [inputPosition, setInputPosition] = useState<{ top: number; left: number; width: number } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Estado para controlar qué inputs de subitem están abiertos
+    const [openSubItemInputs, setOpenSubItemInputs] = useState<{ [entryName: string]: boolean }>({});
+
+    const openInputForEntry = (entryName: string) => {
+        setOpenSubItemInputs((prev) => ({ ...prev, [entryName]: true }));
+    };
+
+    const closeInputForEntry = (entryName: string) => {
+        setOpenSubItemInputs((prev) => ({ ...prev, [entryName]: false }));
+    };
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (
@@ -87,50 +98,74 @@ const PlayerModal: React.FC<Props> = ({
             ? (selectedPlayer.data?.bosses as BossEntry[] || [])
             : (selectedPlayer.data?.[activeTab] as string[] || []);
 
-
     const close = () => setSelectedPlayer(null);
 
     const refreshSelectedPlayer = (members: GuildMember[]) => {
         setSelectedPlayer(members.find((m) => m.name === selectedPlayer.name) || null);
     };
 
-    // Añadir subitem a boss (igual)
-    const addSubItemToBoss = (bossName: string, subItem: string) => {
+    // Añadir subitem a boss o quest
+    const addSubItemToEntry = (entryName: string, subItem: string) => {
         if (!subItem.trim()) return;
         const trimmedSubItem = subItem.trim();
 
-        const alreadyExists = allMembers.some((m) =>
-            m.data?.bosses.some((b) => b.name === bossName && b.subItems.includes(trimmedSubItem))
-        );
+        const alreadyExists = allMembers.some((m) => {
+            const list = m.data?.[activeTab];
+            if (!list) return false;
+            if (activeTab === "bosses") {
+                return (list as BossEntry[]).some((entry) => entry.name === entryName && entry.subItems.includes(trimmedSubItem));
+            }
+            if (activeTab === "quests") {
+                // Para quests, si quieres manejar subItems igual que bosses, deben ser objetos con subItems, si no, esto no aplicaría.
+                const questEntry = (list as any[]).find((q) => q.name === entryName);
+                if (!questEntry) return false;
+                return questEntry.subItems?.includes(trimmedSubItem);
+            }
+            return false;
+        });
         if (alreadyExists) {
-            alert("Este subitem ya está agregado para este boss.");
+            alert("Este subitem ya está agregado para este ítem.");
             return;
         }
 
         const updatedMembers = allMembers.map((member) => {
             if (!member.data) return member;
 
-            const updatedBosses = (member.data.bosses || []).map((b) =>
-                b.name === bossName ? { ...b, subItems: [...b.subItems, trimmedSubItem] } : b
-            );
-
-            return {
-                ...member,
-                data: {
-                    ...member.data,
-                    bosses: updatedBosses,
-                },
-            };
+            if (activeTab === "bosses") {
+                const updatedEntries = (member.data.bosses || []).map((b) =>
+                    b.name === entryName ? { ...b, subItems: [...b.subItems, trimmedSubItem] } : b
+                );
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        bosses: updatedEntries,
+                    },
+                };
+            } else if (activeTab === "quests") {
+                // Asumimos que quests también tienen subItems como bosses (debes adaptar estructura si no)
+                const updatedEntries = (member.data.quests || []).map((q: any) =>
+                    q.name === entryName ? { ...q, subItems: [...(q.subItems || []), trimmedSubItem] } : q
+                );
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        quests: updatedEntries,
+                    },
+                };
+            }
+            return member;
         });
 
         setAllMembers(updatedMembers);
         refreshSelectedPlayer(updatedMembers);
     };
 
-    // Remover subitem (igual)
-    const removeSubItem = (bossName: string, subItem: string) => {
+    // Remover subitem (bosses o quests)
+    const removeSubItem = (entryName: string, subItem: string) => {
         const isCheckedByAnyone = Object.values(checkedItems).some(
-            (playerItems) => playerItems?.bosses?.[`${bossName}::${subItem}`]
+            (playerItems) => playerItems?.[activeTab]?.[`${entryName}::${subItem}`]
         );
         if (isCheckedByAnyone) {
             alert("No se puede eliminar este subitem porque está marcado por algún jugador.");
@@ -140,17 +175,30 @@ const PlayerModal: React.FC<Props> = ({
         const updatedMembers = allMembers.map((member) => {
             if (!member.data) return member;
 
-            const updatedBosses = (member.data.bosses || []).map((b) =>
-                b.name === bossName ? { ...b, subItems: b.subItems.filter((s) => s !== subItem) } : b
-            );
-
-            return {
-                ...member,
-                data: {
-                    ...member.data,
-                    bosses: updatedBosses,
-                },
-            };
+            if (activeTab === "bosses") {
+                const updatedEntries = (member.data.bosses || []).map((b) =>
+                    b.name === entryName ? { ...b, subItems: b.subItems.filter((s) => s !== subItem) } : b
+                );
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        bosses: updatedEntries,
+                    },
+                };
+            } else if (activeTab === "quests") {
+                const updatedEntries = (member.data.quests || []).map((q: any) =>
+                    q.name === entryName ? { ...q, subItems: (q.subItems || []).filter((s: string) => s !== subItem) } : q
+                );
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        quests: updatedEntries,
+                    },
+                };
+            }
+            return member;
         });
 
         setAllMembers(updatedMembers);
@@ -159,35 +207,26 @@ const PlayerModal: React.FC<Props> = ({
         // Limpiar checkedItems para ese subitem
         const updatedChecked = { ...checkedItems };
         Object.keys(updatedChecked).forEach((playerName) => {
-            if (updatedChecked[playerName]?.bosses?.[`${bossName}::${subItem}`]) {
-                delete updatedChecked[playerName].bosses![`${bossName}::${subItem}`];
+            if (updatedChecked[playerName]?.[activeTab]?.[`${entryName}::${subItem}`]) {
+                delete updatedChecked[playerName][activeTab]![`${entryName}::${subItem}`];
             }
         });
         setCheckedItems(updatedChecked);
     };
 
-    // Añadir item (igual, con casteos)
+    // Añadir item general
     const addItem = () => {
         if (!newItem.trim()) return;
 
         const trimmedItem = newItem.trim();
 
         if (activeTab === "chares") {
-            const isValidMember = allMembers.some(
-                (m) => m.name.toLowerCase() === trimmedItem.toLowerCase()
-            );
-            if (!isValidMember) {
-                alert("El nombre no corresponde a ningún miembro de la guild.");
-                return;
-            }
-
-            if (
-                (currentList as string[]).some((item) => item.toLowerCase() === trimmedItem.toLowerCase())
-            ) {
+            if ((currentList as string[]).some((item) => item.toLowerCase() === trimmedItem.toLowerCase())) {
                 alert("Este chare ya está agregado.");
                 return;
             }
 
+            // Agregamos sin validar que sea miembro
             const updatedMembers = allMembers.map((member) =>
                 member.name === selectedPlayer.name
                     ? {
@@ -206,12 +245,9 @@ const PlayerModal: React.FC<Props> = ({
             refreshSelectedPlayer(updatedMembers);
             setNewItem("");
             setShowSuggestions(false);
-        } else if (activeTab === "bosses") {
-            if (
-                (currentList as BossEntry[]).some(
-                    (b) => b.name.toLowerCase() === trimmedItem.toLowerCase()
-                )
-            ) {
+        }
+        else if (activeTab === "bosses") {
+            if ((currentList as BossEntry[]).some((b) => b.name.toLowerCase() === trimmedItem.toLowerCase())) {
                 alert("Este boss ya está agregado.");
                 return;
             }
@@ -230,10 +266,29 @@ const PlayerModal: React.FC<Props> = ({
             setAllMembers(updatedMembers);
             refreshSelectedPlayer(updatedMembers);
             setNewItem("");
+        } else if (activeTab === "quests") {
+            // Aquí asumimos quests con subItems igual que bosses
+            if ((currentList as any[]).some((q) => q.name.toLowerCase() === trimmedItem.toLowerCase())) {
+                alert("Esta quest ya está agregada.");
+                return;
+            }
+
+            const updatedMembers = allMembers.map((member) => ({
+                ...member,
+                data: {
+                    ...member.data,
+                    quests: [...(member.data?.quests || []), { name: trimmedItem, subItems: [] }],
+                    bosses: member.data?.bosses || [],
+                    chares: member.data?.chares || [],
+                    notas: member.data?.notas || [],
+                },
+            }));
+
+            setAllMembers(updatedMembers);
+            refreshSelectedPlayer(updatedMembers);
+            setNewItem("");
         } else {
-            if (
-                (currentList as string[]).some((item) => item.toLowerCase() === trimmedItem.toLowerCase())
-            ) {
+            if ((currentList as string[]).some((item) => item.toLowerCase() === trimmedItem.toLowerCase())) {
                 alert(`Este ${activeTab} ya está agregado.`);
                 return;
             }
@@ -279,7 +334,7 @@ const PlayerModal: React.FC<Props> = ({
                 const updatedList =
                     activeTab === "bosses"
                         ? (list as BossEntry[]).filter((i) => i.name !== item)
-                        : (list as string[]).filter((i) => i !== item);
+                        : (list as any[]).filter((i) => i.name !== item);
 
                 return {
                     ...member,
@@ -291,9 +346,7 @@ const PlayerModal: React.FC<Props> = ({
             } else {
                 if (member.name !== selectedPlayer?.name) return member;
 
-                const updatedList = (member.data[activeTab] || []).filter(
-                    (i: string) => i !== item
-                );
+                const updatedList = (member.data[activeTab] || []).filter((i: string) => i !== item);
 
                 return {
                     ...member,
@@ -318,6 +371,7 @@ const PlayerModal: React.FC<Props> = ({
             setCheckedItems(updatedChecked);
         }
     };
+
     const filteredSuggestions =
         activeTab === "chares" && newItem.trim()
             ? allMembers
@@ -364,17 +418,26 @@ const PlayerModal: React.FC<Props> = ({
         );
     };
 
-    const AddSubItemInput: React.FC<{ bossName: string; addSubItemToBoss: (bossName: string, subItem: string) => void }> = ({
-        bossName,
-        addSubItemToBoss,
-    }) => {
+    const AddSubItemInput: React.FC<{ entryName: string }> = ({ entryName }) => {
         const [subItemName, setSubItemName] = useState("");
 
         const onAdd = () => {
             if (!subItemName.trim()) return;
-            addSubItemToBoss(bossName, subItemName.trim());
+            addSubItemToEntry(entryName, subItemName.trim());
             setSubItemName("");
+            closeInputForEntry(entryName);
         };
+
+        if (!openSubItemInputs[entryName]) {
+            return (
+                <button
+                    onClick={() => openInputForEntry(entryName)}
+                    className="ml-6 mb-2 text-blue-600 hover:underline text-sm"
+                >
+                    + Agregar subitem
+                </button>
+            );
+        }
 
         return (
             <div className="flex space-x-2 items-center ml-6 mb-2">
@@ -388,24 +451,25 @@ const PlayerModal: React.FC<Props> = ({
                         if (e.key === "Enter") {
                             e.preventDefault();
                             onAdd();
+                        } else if (e.key === "Escape") {
+                            closeInputForEntry(entryName);
                         }
                     }}
+                    autoFocus
                 />
                 <button onClick={onAdd} className="bg-green-500 text-white px-3 py-1 rounded text-sm">
                     +
                 </button>
+                <button
+                    onClick={() => closeInputForEntry(entryName)}
+                    className="text-gray-500 px-2 py-1 rounded hover:bg-gray-200"
+                    title="Cancelar"
+                >
+                    ✕
+                </button>
             </div>
         );
     };
-
-    // Cast tipo correcto para currentList
-    const typedCurrentList =
-        activeTab === "bosses"
-            ? (currentList as BossEntry[])
-            : (currentList as string[]);
-
-
-
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 ">
@@ -471,8 +535,7 @@ const PlayerModal: React.FC<Props> = ({
                     {tabs.map((tab) => (
                         <button
                             key={tab}
-                            className={`px-3 py-1 rounded capitalize ${activeTab === tab ? "bg-blue-500 text-white" : "bg-gray-200"
-                                }`}
+                            className={`px-3 py-1 rounded capitalize ${activeTab === tab ? "bg-blue-500 text-white" : "bg-gray-200"}`}
                             onClick={() => {
                                 setActiveTab(tab);
                                 setNewItem("");
@@ -486,33 +549,33 @@ const PlayerModal: React.FC<Props> = ({
 
                 {/* Lista de ítems con checkboxes y subitems */}
                 <ul className="mb-2 max-h-64 overflow-y-auto">
-                    {activeTab === "bosses"
-                        ? (typedCurrentList as BossEntry[]).map((boss) => (
-                            <li key={boss.name} className="border-b py-1">
+                    {(activeTab === "bosses" || activeTab === "quests") &&
+                        (currentList as BossEntry[]).map((entry) => (
+                            <li key={entry.name} className="border-b py-1">
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center space-x-2">
                                         <input
                                             type="checkbox"
-                                            checked={checkedItems[selectedPlayer.name]?.bosses?.[boss.name] || false}
+                                            checked={checkedItems[selectedPlayer.name]?.[activeTab]?.[entry.name] || false}
                                             onChange={(e) => {
                                                 setCheckedItems((prev) => ({
                                                     ...prev,
                                                     [selectedPlayer.name]: {
                                                         ...prev[selectedPlayer.name],
-                                                        bosses: {
-                                                            ...prev[selectedPlayer.name]?.bosses,
-                                                            [boss.name]: e.target.checked,
+                                                        [activeTab]: {
+                                                            ...prev[selectedPlayer.name]?.[activeTab],
+                                                            [entry.name]: e.target.checked,
                                                         },
                                                     },
                                                 }));
                                             }}
                                         />
-                                        <span className="font-semibold">{boss.name}</span>
+                                        <span className="font-semibold">{entry.name}</span>
                                     </div>
                                     <button
-                                        onClick={() => removeItem(boss.name)}
+                                        onClick={() => removeItem(entry.name)}
                                         className="text-red-500 hover:underline text-sm"
-                                        title="Eliminar boss"
+                                        title={`Eliminar ${activeTab.slice(0, -1)}`}
                                     >
                                         Eliminar
                                     </button>
@@ -520,23 +583,20 @@ const PlayerModal: React.FC<Props> = ({
 
                                 {/* Subitems */}
                                 <ul className="ml-6 mb-2">
-                                    {boss.subItems.map((sub) => (
-                                        <li
-                                            key={sub}
-                                            className="flex justify-between items-center"
-                                        >
+                                    {entry.subItems.map((sub) => (
+                                        <li key={sub} className="flex justify-between items-center">
                                             <div className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
-                                                    checked={checkedItems[selectedPlayer.name]?.bosses?.[`${boss.name}::${sub}`] || false}
+                                                    checked={checkedItems[selectedPlayer.name]?.[activeTab]?.[`${entry.name}::${sub}`] || false}
                                                     onChange={(e) => {
                                                         setCheckedItems((prev) => ({
                                                             ...prev,
                                                             [selectedPlayer.name]: {
                                                                 ...prev[selectedPlayer.name],
-                                                                bosses: {
-                                                                    ...prev[selectedPlayer.name]?.bosses,
-                                                                    [`${boss.name}::${sub}`]: e.target.checked,
+                                                                [activeTab]: {
+                                                                    ...prev[selectedPlayer.name]?.[activeTab],
+                                                                    [`${entry.name}::${sub}`]: e.target.checked,
                                                                 },
                                                             },
                                                         }));
@@ -545,7 +605,7 @@ const PlayerModal: React.FC<Props> = ({
                                                 <span>{sub}</span>
                                             </div>
                                             <button
-                                                onClick={() => removeSubItem(boss.name, sub)}
+                                                onClick={() => removeSubItem(entry.name, sub)}
                                                 className="text-red-500 hover:underline text-sm"
                                                 title="Eliminar subitem"
                                             >
@@ -555,60 +615,53 @@ const PlayerModal: React.FC<Props> = ({
                                     ))}
                                 </ul>
 
-                                {/* Input para agregar subitems */}
-                                <AddSubItemInput bossName={boss.name} addSubItemToBoss={addSubItemToBoss} />
+                                {/* Input para agregar subitems (ahora oculto y controlado) */}
+                                <AddSubItemInput entryName={entry.name} />
                             </li>
-                        ))
-                        : (typedCurrentList as string[]).map((item) => (
-                            <li
-                                key={item}
-                                className="flex justify-between items-center border-b py-1"
-                            >
-                                <div className="flex items-center space-x-2">
-                                    {activeTab === "quests" && (
-                                        <input
-                                            type="checkbox"
-                                            checked={checkedItems[selectedPlayer.name]?.[activeTab]?.[item] || false}
-                                            onChange={(e) => {
-                                                setCheckedItems((prev) => ({
-                                                    ...prev,
-                                                    [selectedPlayer.name]: {
-                                                        ...prev[selectedPlayer.name],
-                                                        [activeTab]: {
-                                                            ...prev[selectedPlayer.name]?.[activeTab],
-                                                            [item]: e.target.checked,
-                                                        },
-                                                    },
-                                                }));
-                                            }}
-                                        />
-                                    )}
-                                    {activeTab === "chares" ? (
-                                        <button
-                                            className="text-blue-600 underline hover:text-blue-800"
-                                            onClick={() => {
-                                                const player = allMembers.find((m) => m.name === item);
-                                                if (player) setSelectedPlayer(player);
-                                            }}
-                                        >
-                                            {item}
-                                        </button>
-                                    ) : (
-                                        <span>{item}</span>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => removeItem(item)}
-                                    className="text-red-500 hover:underline text-sm"
-                                >
+                        ))}
+
+                    {/* chares y notas siguen igual */}
+                    {activeTab === "chares" &&
+                        (currentList as string[]).map((item) => {
+                            const isMember = allMembers.some((m) => m.name === item);
+
+                            return (
+                                <li key={item} className="flex justify-between items-center border-b py-1">
+                                    <div className="flex items-center space-x-2">
+                                        {isMember ? (
+                                            <button
+                                                className="text-blue-600 underline hover:text-blue-800"
+                                                onClick={() => {
+                                                    const player = allMembers.find((m) => m.name === item);
+                                                    if (player) setSelectedPlayer(player);
+                                                }}
+                                            >
+                                                {item}
+                                            </button>
+                                        ) : (
+                                            <span className="text-gray-700 cursor-default">{item}</span>
+                                        )}
+                                    </div>
+                                    <button onClick={() => removeItem(item)} className="text-red-500 hover:underline text-sm">
+                                        Eliminar
+                                    </button>
+                                </li>
+                            );
+                        })}
+
+
+                    {activeTab === "notas" &&
+                        (currentList as string[]).map((item) => (
+                            <li key={item} className="flex justify-between items-center border-b py-1">
+                                <span>{item}</span>
+                                <button onClick={() => removeItem(item)} className="text-red-500 hover:underline text-sm">
                                     Eliminar
                                 </button>
                             </li>
                         ))}
                 </ul>
 
-
-                {/* Input con sugerencias */}
+                {/* Input con sugerencias para agregar item */}
                 <div className="relative flex space-x-2 mb-4">
                     <input
                         ref={inputRef}

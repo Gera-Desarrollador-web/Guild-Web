@@ -5,6 +5,8 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import isEqual from "lodash.isequal";
 import { GuildMember, CheckedItems } from "./types";
 
+type BossEntry = { name: string; subItems: string[] };
+
 const App: React.FC = () => {
   const guildName = "Twenty Thieves";
 
@@ -47,20 +49,14 @@ const App: React.FC = () => {
       const docRef = doc(db, "guilds", guildName);
       const snap = await getDoc(docRef);
 
-      type BossEntry = { name: string; subItems: string[] };
-
       const emptyData = {
         bosses: [] as BossEntry[],
-        quests: [] as string[],
+        quests: [] as BossEntry[], // Ahora quests también con subItems
         chares: [] as string[],
         notas: [] as string[],
       };
 
-      const loadedData: Record<
-        string,
-        { bosses: BossEntry[]; quests: string[]; chares: string[]; notas: string[] }
-      > = {};
-
+      const loadedData: Record<string, typeof emptyData> = {};
 
       let loadedCheckedItems: CheckedItems = {};
 
@@ -76,27 +72,21 @@ const App: React.FC = () => {
             Array.isArray(m.data.chares) &&
             Array.isArray(m.data.notas)
           ) {
-            // Convert bosses if they're strings
-            // Convert and sanitize bosses
-            const bosses: BossEntry[] = m.data.bosses.map((boss: any) => {
-              if (typeof boss === "string") {
-                return { name: boss, subItems: [] };
-              }
-              return {
-                name: boss.name ?? "",
-                subItems: Array.isArray(boss.subItems) ? boss.subItems : [],
-              };
-            });
-
+            // Convertir bosses y quests si son strings a objetos con subItems vacíos
+            const bosses: BossEntry[] = m.data.bosses.map((boss: any) =>
+              typeof boss === "string" ? { name: boss, subItems: [] } : { name: boss.name ?? "", subItems: Array.isArray(boss.subItems) ? boss.subItems : [] }
+            );
+            const quests: BossEntry[] = m.data.quests.map((quest: any) =>
+              typeof quest === "string" ? { name: quest, subItems: [] } : { name: quest.name ?? "", subItems: Array.isArray(quest.subItems) ? quest.subItems : [] }
+            );
 
             loadedData[m.name] = {
               bosses,
-              quests: m.data.quests,
+              quests,
               chares: m.data.chares,
               notas: m.data.notas,
             };
-          }
-          else {
+          } else {
             loadedData[m.name] = emptyData;
           }
         });
@@ -105,9 +95,7 @@ const App: React.FC = () => {
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
           try {
-            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(
-              member.name
-            )}`;
+            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(member.name)}`;
             const characterRes = await fetch(characterUrl);
             const characterData = await characterRes.json();
             const char = characterData.character.character;
@@ -181,9 +169,6 @@ const App: React.FC = () => {
     }
   }, [allMembers, checkedItems, hasLoadedOnce]);
 
-
-
-
   const filteredMembers = useMemo(() => {
     let members = showOnlyOnline
       ? allMembers.filter((m) => m.status.toLowerCase() === "online")
@@ -205,28 +190,19 @@ const App: React.FC = () => {
 
           return (items as any[]).some((item) => {
             if (typeof item === "string") {
-              return (
-                item.toLowerCase().includes(filter) &&
-                markedItems[item] === true
-              );
+              return item.toLowerCase().includes(filter) && markedItems[item] === true;
             }
 
             if (typeof item === "object" && item.name) {
               const bossName = item.name.toLowerCase();
               const subItems: string[] = item.subItems || [];
 
-              // Boss marcado y coincide con filtro
-              const bossMatch =
-                bossName.includes(filter) && markedItems[item.name] === true;
+              const bossMatch = bossName.includes(filter) && markedItems[item.name] === true;
 
-              // Subitem marcado y coincide con filtro (usando clave combinada)
               const subMatch = subItems.some((sub) => {
                 const subLower = sub.toLowerCase();
                 const combinedKey = `${item.name}::${sub}`;
-                return (
-                  subLower.includes(filter) &&
-                  markedItems[combinedKey] === true
-                );
+                return subLower.includes(filter) && markedItems[combinedKey] === true;
               });
 
               return bossMatch || subMatch;
@@ -250,11 +226,8 @@ const App: React.FC = () => {
     return members;
   }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems]);
 
-
-
   return (
     <div className="p-4 max-w-7xl mx-auto ">
-
       <GuildManager
         allMembers={allMembers}
         setAllMembers={setAllMembers}

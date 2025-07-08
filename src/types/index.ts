@@ -16,7 +16,7 @@ export type GuildMember = {
   }[];
   data?: {
     bosses: BossEntry[];   // Cambia bosses a array de objetos
-    quests: string[];
+    quests: BossEntry[];
     chares: string[];
     notas: string[];
   };
