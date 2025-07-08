@@ -396,7 +396,16 @@ const PlayerModal: React.FC<Props> = ({
     };
 
     // Cast tipo correcto para currentList
-    const typedCurrentList = activeTab === "bosses" ? (currentList as BossEntry[]) : (currentList as string[]);
+    const typedCurrentList =
+        activeTab === "bosses"
+            ? (currentList as BossEntry[])
+            : (currentList as string[]);
+
+
+    function isBossEntry(item: string | BossEntry): item is BossEntry {
+        return typeof item === "object" && item !== null && "name" in item && "subItems" in item;
+    }
+
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 ">
@@ -478,8 +487,8 @@ const PlayerModal: React.FC<Props> = ({
                 {/* Lista de ítems con checkboxes y subitems */}
                 <ul className="mb-2 max-h-64 overflow-y-auto">
                     {activeTab === "bosses"
-                        ? typedCurrentList.map((boss, index) => (
-                            <li key={index} className="border-b py-1">
+                        ? (typedCurrentList as BossEntry[]).map((boss) => (
+                            <li key={boss.name} className="border-b py-1">
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="flex items-center space-x-2">
                                         <input
@@ -511,8 +520,11 @@ const PlayerModal: React.FC<Props> = ({
 
                                 {/* Subitems */}
                                 <ul className="ml-6 mb-2">
-                                    {boss.subItems.map((sub: string, subIndex: number) => (
-                                        <li key={subIndex} className="flex justify-between items-center">
+                                    {boss.subItems.map((sub) => (
+                                        <li
+                                            key={sub}
+                                            className="flex justify-between items-center"
+                                        >
                                             <div className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
@@ -547,8 +559,11 @@ const PlayerModal: React.FC<Props> = ({
                                 <AddSubItemInput bossName={boss.name} addSubItemToBoss={addSubItemToBoss} />
                             </li>
                         ))
-                        : typedCurrentList.map((item, index) => (
-                            <li key={index} className="flex justify-between items-center border-b py-1">
+                        : (typedCurrentList as string[]).map((item) => (
+                            <li
+                                key={item}
+                                className="flex justify-between items-center border-b py-1"
+                            >
                                 <div className="flex items-center space-x-2">
                                     {activeTab === "quests" && (
                                         <input
@@ -582,12 +597,16 @@ const PlayerModal: React.FC<Props> = ({
                                         <span>{item}</span>
                                     )}
                                 </div>
-                                <button onClick={() => removeItem(item)} className="text-red-500 hover:underline text-sm">
+                                <button
+                                    onClick={() => removeItem(item)}
+                                    className="text-red-500 hover:underline text-sm"
+                                >
                                     Eliminar
                                 </button>
                             </li>
                         ))}
                 </ul>
+
 
                 {/* Input con sugerencias */}
                 <div className="relative flex space-x-2 mb-4">
