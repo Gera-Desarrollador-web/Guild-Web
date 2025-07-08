@@ -77,12 +77,17 @@ const App: React.FC = () => {
             Array.isArray(m.data.notas)
           ) {
             // Convert bosses if they're strings
+            // Convert and sanitize bosses
             const bosses: BossEntry[] = m.data.bosses.map((boss: any) => {
               if (typeof boss === "string") {
                 return { name: boss, subItems: [] };
               }
-              return boss;
+              return {
+                name: boss.name ?? "",
+                subItems: Array.isArray(boss.subItems) ? boss.subItems : [],
+              };
             });
+
 
             loadedData[m.name] = {
               bosses,
@@ -177,7 +182,7 @@ const App: React.FC = () => {
   }, [allMembers, checkedItems, hasLoadedOnce]);
 
 
- 
+
 
   const filteredMembers = useMemo(() => {
     let members = showOnlyOnline
