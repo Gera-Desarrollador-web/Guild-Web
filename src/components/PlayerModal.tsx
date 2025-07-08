@@ -402,9 +402,6 @@ const PlayerModal: React.FC<Props> = ({
             : (currentList as string[]);
 
 
-    function isBossEntry(item: string | BossEntry): item is BossEntry {
-        return typeof item === "object" && item !== null && "name" in item && "subItems" in item;
-    }
 
 
     return (
