@@ -20,6 +20,8 @@ export type GuildMember = {
     chares: string[];
     notas: string[];
   };
+  levelHistory?: { date: string; level: number }[]; // <-- aquí el historial de niveles con fechas ISO
+
 };
 
 export type CheckedItems = {

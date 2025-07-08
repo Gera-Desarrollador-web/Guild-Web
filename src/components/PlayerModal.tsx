@@ -372,6 +372,18 @@ const PlayerModal: React.FC<Props> = ({
         }
     };
 
+    const getLevelOneWeekAgo = (history: { date: string; level: number }[]): number | null => {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        // Busca la entrada más reciente antes de hace 7 días
+        const sorted = history
+            .filter((entry) => new Date(entry.date) <= oneWeekAgo)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+        return sorted.length > 0 ? sorted[0].level : null;
+    };
+
     const filteredSuggestions =
         activeTab === "chares" && newItem.trim()
             ? allMembers
@@ -470,6 +482,8 @@ const PlayerModal: React.FC<Props> = ({
             </div>
         );
     };
+    const levelOneWeekAgo = selectedPlayer.levelHistory ? getLevelOneWeekAgo(selectedPlayer.levelHistory) : null;
+    const levelDiff = levelOneWeekAgo !== null ? selectedPlayer.level - levelOneWeekAgo : null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 ">
@@ -481,6 +495,9 @@ const PlayerModal: React.FC<Props> = ({
                             <p>
                                 <span className="font-bold">Lvl: </span>
                                 {selectedPlayer.level}
+                                {levelDiff !== null && levelDiff > 0 && (
+                                    <span className="ml-2 text-green-600 font-semibold">+{levelDiff} en 7 días</span>
+                                )}
                             </p>
                             <p>
                                 <span className="font-bold">Vocation: </span>
@@ -495,6 +512,7 @@ const PlayerModal: React.FC<Props> = ({
                                     {selectedPlayer.status}
                                 </span>
                             </p>
+
                         </div>
                         <img src={vocationGifUrl} alt="Vocation gif" className="w-20 h-20 ml-4 object-contain" />
                     </div>
@@ -527,7 +545,9 @@ const PlayerModal: React.FC<Props> = ({
                                 </li>
                             ))}
                         </ul>
+
                     </div>
+
                 )}
 
                 {/* Tabs */}
