@@ -24,13 +24,14 @@ type Props = {
 
 const GuildMembersTable: React.FC<Props> = ({ members, onPlayerSelect }) => (
   <div className="overflow-x-auto max-w-full max-h-[600px]">
-    <table className="w-full table-auto border-x border-b border-gray-300">
-      <thead className="bg-gray-200 sticky top-0 z-20 border-t border-gray-300">
+    <table className="w-full table-fixed border-collapse border border-gray-300">
+
+      <thead className="bg-gray-200 sticky top-0 z-20 shadow-md">
         <tr>
-          <th className="border border-gray-300 bg-gray-200 px-4 py-2">Nombre</th>
-          <th className="border border-gray-300 bg-gray-200 px-4 py-2">Nivel</th>
-          <th className="border border-gray-300 bg-gray-200 px-4 py-2">Vocación</th>
-          <th className="border border-gray-300 bg-gray-200 px-4 py-2">Estado</th>
+          <th className="w-1/4 border border-gray-300 bg-gray-200 px-4 py-2">Nombre</th>
+          <th className="w-1/6 border border-gray-300 bg-gray-200 px-4 py-2">Nivel</th>
+          <th className="w-1/4 border border-gray-300 bg-gray-200 px-4 py-2">Vocación</th>
+          <th className="w-1/6 border border-gray-300 bg-gray-200 px-4 py-2">Estado</th>
         </tr>
       </thead>
       <tbody>
@@ -56,7 +57,6 @@ const GuildMembersTable: React.FC<Props> = ({ members, onPlayerSelect }) => (
       </tbody>
     </table>
   </div>
-
 );
 
 export default GuildMembersTable;
