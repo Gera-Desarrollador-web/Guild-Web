@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { BossEntry } from "../types";
+import { BossEntry, GuildMember } from "../types";
 import { createPortal } from "react-dom";
-import { GuildMember } from "../types";
 
 type CheckedItems = {
     [playerName: string]: {
@@ -36,7 +35,6 @@ const PlayerModal: React.FC<Props> = ({
     const [newItem, setNewItem] = useState("");
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [inputPosition, setInputPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -66,6 +64,7 @@ const PlayerModal: React.FC<Props> = ({
 
     if (!selectedPlayer) return null;
 
+    // Vocation gifs (igual que antes)
     const vocationGifs: { [key: string]: { [key: string]: string } } = {
         Knight: { male: "/Knight.gif", female: "/knightFemale.gif" },
         "Elite Knight": { male: "/Knight.gif", female: "/KnightFemale.gif" },
@@ -91,17 +90,13 @@ const PlayerModal: React.FC<Props> = ({
         setSelectedPlayer(members.find((m) => m.name === selectedPlayer.name) || null);
     };
 
-    // Agrega un subitem a un boss
+    // Añadir subitem a boss (igual)
     const addSubItemToBoss = (bossName: string, subItem: string) => {
         if (!subItem.trim()) return;
-
         const trimmedSubItem = subItem.trim();
 
-        // Verificar si ya existe el subitem en algún boss para todos los miembros (opcional, puedes quitar esta validación si quieres)
         const alreadyExists = allMembers.some((m) =>
-            m.data?.bosses.some(
-                (b) => b.name === bossName && b.subItems.includes(trimmedSubItem)
-            )
+            m.data?.bosses.some((b) => b.name === bossName && b.subItems.includes(trimmedSubItem))
         );
         if (alreadyExists) {
             alert("Este subitem ya está agregado para este boss.");
@@ -112,9 +107,7 @@ const PlayerModal: React.FC<Props> = ({
             if (!member.data) return member;
 
             const updatedBosses = (member.data.bosses || []).map((b) =>
-                b.name === bossName
-                    ? { ...b, subItems: [...b.subItems, trimmedSubItem] }
-                    : b
+                b.name === bossName ? { ...b, subItems: [...b.subItems, trimmedSubItem] } : b
             );
 
             return {
@@ -130,11 +123,10 @@ const PlayerModal: React.FC<Props> = ({
         refreshSelectedPlayer(updatedMembers);
     };
 
+    // Remover subitem (igual)
     const removeSubItem = (bossName: string, subItem: string) => {
-        // Validar si está marcado por alguien
         const isCheckedByAnyone = Object.values(checkedItems).some(
-            (playerItems) =>
-                playerItems?.bosses?.[`${bossName}::${subItem}`]
+            (playerItems) => playerItems?.bosses?.[`${bossName}::${subItem}`]
         );
         if (isCheckedByAnyone) {
             alert("No se puede eliminar este subitem porque está marcado por algún jugador.");
@@ -145,9 +137,7 @@ const PlayerModal: React.FC<Props> = ({
             if (!member.data) return member;
 
             const updatedBosses = (member.data.bosses || []).map((b) =>
-                b.name === bossName
-                    ? { ...b, subItems: b.subItems.filter((s) => s !== subItem) }
-                    : b
+                b.name === bossName ? { ...b, subItems: b.subItems.filter((s) => s !== subItem) } : b
             );
 
             return {
@@ -172,6 +162,7 @@ const PlayerModal: React.FC<Props> = ({
         setCheckedItems(updatedChecked);
     };
 
+    // Añadir item (igual, con casteos)
     const addItem = () => {
         if (!newItem.trim()) return;
 
@@ -186,7 +177,9 @@ const PlayerModal: React.FC<Props> = ({
                 return;
             }
 
-            if (currentList.some((item: string) => item.toLowerCase() === trimmedItem.toLowerCase())) {
+            if (
+                (currentList as string[]).some((item) => item.toLowerCase() === trimmedItem.toLowerCase())
+            ) {
                 alert("Este chare ya está agregado.");
                 return;
             }
@@ -211,8 +204,8 @@ const PlayerModal: React.FC<Props> = ({
             setShowSuggestions(false);
         } else if (activeTab === "bosses") {
             if (
-                allMembers.some((m) =>
-                    m.data?.bosses.some((b) => b.name.toLowerCase() === trimmedItem.toLowerCase())
+                (currentList as BossEntry[]).some(
+                    (b) => b.name.toLowerCase() === trimmedItem.toLowerCase()
                 )
             ) {
                 alert("Este boss ya está agregado.");
@@ -233,8 +226,14 @@ const PlayerModal: React.FC<Props> = ({
             setAllMembers(updatedMembers);
             refreshSelectedPlayer(updatedMembers);
             setNewItem("");
-        }
-        else {
+        } else {
+            if (
+                (currentList as string[]).some((item) => item.toLowerCase() === trimmedItem.toLowerCase())
+            ) {
+                alert(`Este ${activeTab} ya está agregado.`);
+                return;
+            }
+
             const updatedMembers = allMembers.map((member) =>
                 member.name === selectedPlayer.name
                     ? {
@@ -255,6 +254,7 @@ const PlayerModal: React.FC<Props> = ({
         }
     };
 
+    // Remover item
     const removeItem = (item: string) => {
         if (activeTab === "bosses" || activeTab === "quests") {
             const isCheckedByAnyone = Object.values(checkedItems).some(
@@ -270,12 +270,13 @@ const PlayerModal: React.FC<Props> = ({
             if (!member.data) return member;
 
             if (activeTab === "bosses" || activeTab === "quests") {
-                const updatedList = (member.data[activeTab] || []).filter((i: any) => {
-                    if (activeTab === "bosses") {
-                        return i.name !== item;
-                    }
-                    return i !== item;
-                });
+                const list = member.data[activeTab] || [];
+
+                const updatedList =
+                    activeTab === "bosses"
+                        ? (list as BossEntry[]).filter((i) => i.name !== item)
+                        : (list as string[]).filter((i) => i !== item);
+
                 return {
                     ...member,
                     data: {
@@ -284,9 +285,12 @@ const PlayerModal: React.FC<Props> = ({
                     },
                 };
             } else {
-                if (member.name !== selectedPlayer.name) return member;
+                if (member.name !== selectedPlayer?.name) return member;
 
-                const updatedList = (member.data[activeTab] || []).filter((i: string) => i !== item);
+                const updatedList = (member.data[activeTab] || []).filter(
+                    (i: string) => i !== item
+                );
+
                 return {
                     ...member,
                     data: {
@@ -329,7 +333,6 @@ const PlayerModal: React.FC<Props> = ({
         setShowSuggestions(false);
     };
 
-    // Componente portal para la lista de sugerencias
     const SuggestionsPortal = () => {
         if (!inputPosition) return null;
         return createPortal(
@@ -358,7 +361,6 @@ const PlayerModal: React.FC<Props> = ({
         );
     };
 
-    // Componente para input de subitems
     const AddSubItemInput: React.FC<{ bossName: string; addSubItemToBoss: (bossName: string, subItem: string) => void }> = ({
         bossName,
         addSubItemToBoss,
@@ -393,9 +395,8 @@ const PlayerModal: React.FC<Props> = ({
         );
     };
 
-    const typedCurrentList = activeTab === "bosses"
-        ? (currentList as BossEntry[])
-        : (currentList as string[]);
+    // Cast tipo correcto para currentList
+    const typedCurrentList = activeTab === "bosses" ? (currentList as BossEntry[]) : (currentList as string[]);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 ">
@@ -415,20 +416,14 @@ const PlayerModal: React.FC<Props> = ({
                             <p>
                                 <span className="font-bold">Status: </span>
                                 <span
-                                    className={`${selectedPlayer.status.toLowerCase() === "online"
-                                            ? "text-green-600"
-                                            : "text-gray-700"
+                                    className={`${selectedPlayer.status.toLowerCase() === "online" ? "text-green-600" : "text-gray-700"
                                         }`}
                                 >
                                     {selectedPlayer.status}
                                 </span>
                             </p>
                         </div>
-                        <img
-                            src={vocationGifUrl}
-                            alt="Vocation gif"
-                            className="w-20 h-20 ml-4 object-contain"
-                        />
+                        <img src={vocationGifUrl} alt="Vocation gif" className="w-20 h-20 ml-4 object-contain" />
                     </div>
                     <button
                         className="text-gray-600 hover:text-black self-start"
@@ -442,9 +437,7 @@ const PlayerModal: React.FC<Props> = ({
                 {selectedPlayer.deaths && selectedPlayer.deaths.length > 0 && (
                     <div className="bg-white mb-4">
                         <h4 className="text-md font-bold mb-2">
-                            {selectedPlayer.deaths.length === 1
-                                ? "murió recientemente:"
-                                : "murió varias veces recientemente:"}
+                            {selectedPlayer.deaths.length === 1 ? "murió recientemente:" : "murió varias veces recientemente:"}
                         </h4>
                         <ul className="space-y-1 text-sm max-h-20 overflow-y-auto">
                             {selectedPlayer.deaths.map((death, idx) => (
@@ -453,8 +446,7 @@ const PlayerModal: React.FC<Props> = ({
                                         <span className="font-semibold">Nivel:</span> {death.level}
                                     </div>
                                     <div className="text-gray-700">
-                                        <span className="font-semibold">Fecha:</span>{" "}
-                                        {new Date(death.time).toLocaleString()}
+                                        <span className="font-semibold">Fecha:</span> {new Date(death.time).toLocaleString()}
                                     </div>
                                     <div className="text-gray-700">
                                         <span className="font-semibold">Razón:</span> {death.reason}
@@ -492,10 +484,7 @@ const PlayerModal: React.FC<Props> = ({
                                     <div className="flex items-center space-x-2">
                                         <input
                                             type="checkbox"
-                                            checked={
-                                                checkedItems[selectedPlayer.name]?.bosses?.[boss.name] ||
-                                                false
-                                            }
+                                            checked={checkedItems[selectedPlayer.name]?.bosses?.[boss.name] || false}
                                             onChange={(e) => {
                                                 setCheckedItems((prev) => ({
                                                     ...prev,
@@ -522,19 +511,12 @@ const PlayerModal: React.FC<Props> = ({
 
                                 {/* Subitems */}
                                 <ul className="ml-6 mb-2">
-                                    {boss.subItems.map((sub, subIndex) => (
-                                        <li
-                                            key={subIndex}
-                                            className="flex justify-between items-center"
-                                        >
+                                    {boss.subItems.map((sub: string, subIndex: number) => (
+                                        <li key={subIndex} className="flex justify-between items-center">
                                             <div className="flex items-center space-x-2">
                                                 <input
                                                     type="checkbox"
-                                                    checked={
-                                                        checkedItems[selectedPlayer.name]?.bosses?.[
-                                                        `${boss.name}::${sub}`
-                                                        ] || false
-                                                    }
+                                                    checked={checkedItems[selectedPlayer.name]?.bosses?.[`${boss.name}::${sub}`] || false}
                                                     onChange={(e) => {
                                                         setCheckedItems((prev) => ({
                                                             ...prev,
@@ -562,25 +544,16 @@ const PlayerModal: React.FC<Props> = ({
                                 </ul>
 
                                 {/* Input para agregar subitems */}
-                                <AddSubItemInput
-                                    bossName={boss.name}
-                                    addSubItemToBoss={addSubItemToBoss}
-                                />
+                                <AddSubItemInput bossName={boss.name} addSubItemToBoss={addSubItemToBoss} />
                             </li>
                         ))
                         : typedCurrentList.map((item, index) => (
-                            <li
-                                key={index}
-                                className="flex justify-between items-center border-b py-1"
-                            >
+                            <li key={index} className="flex justify-between items-center border-b py-1">
                                 <div className="flex items-center space-x-2">
                                     {activeTab === "quests" && (
                                         <input
                                             type="checkbox"
-                                            checked={
-                                                checkedItems[selectedPlayer.name]?.[activeTab]?.[item] ||
-                                                false
-                                            }
+                                            checked={checkedItems[selectedPlayer.name]?.[activeTab]?.[item] || false}
                                             onChange={(e) => {
                                                 setCheckedItems((prev) => ({
                                                     ...prev,
@@ -609,10 +582,7 @@ const PlayerModal: React.FC<Props> = ({
                                         <span>{item}</span>
                                     )}
                                 </div>
-                                <button
-                                    onClick={() => removeItem(item)}
-                                    className="text-red-500 hover:underline text-sm"
-                                >
+                                <button onClick={() => removeItem(item)} className="text-red-500 hover:underline text-sm">
                                     Eliminar
                                 </button>
                             </li>
@@ -641,10 +611,7 @@ const PlayerModal: React.FC<Props> = ({
                             }
                         }}
                     />
-                    <button
-                        onClick={addItem}
-                        className="bg-green-500 text-white px-3 py-1 rounded"
-                    >
+                    <button onClick={addItem} className="bg-green-500 text-white px-3 py-1 rounded">
                         Agregar
                     </button>
                 </div>
@@ -653,7 +620,6 @@ const PlayerModal: React.FC<Props> = ({
             {showSuggestions && filteredSuggestions.length > 0 && <SuggestionsPortal />}
         </div>
     );
-
 };
 
 export default PlayerModal;
