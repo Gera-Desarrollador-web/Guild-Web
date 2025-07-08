@@ -47,12 +47,20 @@ const App: React.FC = () => {
       const docRef = doc(db, "guilds", guildName);
       const snap = await getDoc(docRef);
 
-      const emptyData = { bosses: [], quests: [], chares: [], notas: [] };
+      type BossEntry = { name: string; subItems: string[] };
+
+      const emptyData = {
+        bosses: [] as BossEntry[],
+        quests: [] as string[],
+        chares: [] as string[],
+        notas: [] as string[],
+      };
 
       const loadedData: Record<
         string,
-        { bosses: string[]; quests: string[]; chares: string[]; notas: string[] }
+        { bosses: BossEntry[]; quests: string[]; chares: string[]; notas: string[] }
       > = {};
+
 
       let loadedCheckedItems: CheckedItems = {};
 
@@ -68,8 +76,22 @@ const App: React.FC = () => {
             Array.isArray(m.data.chares) &&
             Array.isArray(m.data.notas)
           ) {
-            loadedData[m.name] = m.data;
-          } else {
+            // Convert bosses if they're strings
+            const bosses: BossEntry[] = m.data.bosses.map((boss: any) => {
+              if (typeof boss === "string") {
+                return { name: boss, subItems: [] };
+              }
+              return boss;
+            });
+
+            loadedData[m.name] = {
+              bosses,
+              quests: m.data.quests,
+              chares: m.data.chares,
+              notas: m.data.notas,
+            };
+          }
+          else {
             loadedData[m.name] = emptyData;
           }
         });
@@ -162,26 +184,54 @@ const App: React.FC = () => {
       ? allMembers.filter((m) => m.status.toLowerCase() === "online")
       : [...allMembers];
 
-    if (questFilter.trim()) {
-      const filter = questFilter.toLowerCase();
-
+    const filter = questFilter.trim().toLowerCase();
+    if (filter) {
       members = members.filter((member) => {
         const nameMatches = member.name.toLowerCase().includes(filter);
 
-        const dataMatches = Object.entries(member.data || {}).some(([section, items]) => {
-          if (!validSections.includes(section as typeof validSections[number])) return false;
+        const data = member.data || {};
+        const checks = checkedItems[member.name] || {};
 
-          const sectionKey = section as typeof validSections[number];
-          const itemsArray = items as string[];
+        const sectionMatches = Object.entries(data).some(([sectionKey, items]) => {
+          if (!["bosses", "quests", "chares", "notas"].includes(sectionKey)) return false;
 
-          return itemsArray.some((item) => {
-            const matches = item.toLowerCase().includes(filter);
-            const isChecked = checkedItems[member.name]?.[sectionKey]?.[item] === true;
-            return matches && isChecked;
+          const section = sectionKey as keyof typeof checks;
+          const markedItems = checks[section] || {};
+
+          return (items as any[]).some((item) => {
+            if (typeof item === "string") {
+              return (
+                item.toLowerCase().includes(filter) &&
+                markedItems[item] === true
+              );
+            }
+
+            if (typeof item === "object" && item.name) {
+              const bossName = item.name.toLowerCase();
+              const subItems: string[] = item.subItems || [];
+
+              // Boss marcado y coincide con filtro
+              const bossMatch =
+                bossName.includes(filter) && markedItems[item.name] === true;
+
+              // Subitem marcado y coincide con filtro (usando clave combinada)
+              const subMatch = subItems.some((sub) => {
+                const subLower = sub.toLowerCase();
+                const combinedKey = `${item.name}::${sub}`;
+                return (
+                  subLower.includes(filter) &&
+                  markedItems[combinedKey] === true
+                );
+              });
+
+              return bossMatch || subMatch;
+            }
+
+            return false;
           });
         });
 
-        return nameMatches || dataMatches;
+        return nameMatches || sectionMatches;
       });
     }
 
@@ -195,9 +245,11 @@ const App: React.FC = () => {
     return members;
   }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems]);
 
+
+
   return (
     <div className="p-4 max-w-7xl mx-auto ">
-      
+
       <GuildManager
         allMembers={allMembers}
         setAllMembers={setAllMembers}

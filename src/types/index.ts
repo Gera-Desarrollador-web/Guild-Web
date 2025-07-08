@@ -1,3 +1,8 @@
+export type BossEntry = {
+  name: string;
+  subItems: string[];
+};
+
 export type GuildMember = {
   name: string;
   level: number;
@@ -10,18 +15,16 @@ export type GuildMember = {
     reason: string;
   }[];
   data?: {
-    bosses: string[];
+    bosses: BossEntry[];   // Cambia bosses a array de objetos
     quests: string[];
     chares: string[];
     notas: string[];
   };
 };
 
-
-
 export type CheckedItems = {
   [playerName: string]: {
-    bosses?: { [item: string]: boolean };
+    bosses?: { [itemOrSubitem: string]: boolean }; // las keys pueden ser "BossName" o "BossName::SubItemName"
     quests?: { [item: string]: boolean };
     chares?: { [item: string]: boolean };
     notas?: { [item: string]: boolean };
