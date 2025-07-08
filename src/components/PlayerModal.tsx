@@ -82,7 +82,11 @@ const PlayerModal: React.FC<Props> = ({
         vocationGifs[selectedPlayer.vocation]?.[selectedPlayer.sex.toLowerCase()] ||
         "https://media.giphy.com/media/ya4eevXU490Iw/giphy.gif";
 
-    const currentList = selectedPlayer.data?.[activeTab] || [];
+    const currentList =
+        activeTab === "bosses"
+            ? (selectedPlayer.data?.bosses as BossEntry[] || [])
+            : (selectedPlayer.data?.[activeTab] as string[] || []);
+
 
     const close = () => setSelectedPlayer(null);
 
@@ -314,7 +318,6 @@ const PlayerModal: React.FC<Props> = ({
             setCheckedItems(updatedChecked);
         }
     };
-
     const filteredSuggestions =
         activeTab === "chares" && newItem.trim()
             ? allMembers
@@ -322,7 +325,7 @@ const PlayerModal: React.FC<Props> = ({
                     (m) =>
                         m.name.toLowerCase().includes(newItem.trim().toLowerCase()) &&
                         m.name !== selectedPlayer.name &&
-                        !(currentList || []).includes(m.name)
+                        !(currentList as string[]).includes(m.name)
                 )
                 .map((m) => m.name)
                 .slice(0, 5)
