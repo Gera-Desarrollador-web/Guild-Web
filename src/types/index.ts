@@ -21,7 +21,7 @@ export type GuildMember = {
     notas: string[];
   };
   levelHistory?: { date: string; level: number }[]; // <-- aquí el historial de niveles con fechas ISO
-
+  timeZone?: string; 
 };
 
 export type CheckedItems = {

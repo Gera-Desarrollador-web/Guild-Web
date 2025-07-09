@@ -36,6 +36,22 @@ const PlayerModal: React.FC<Props> = ({
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [inputPosition, setInputPosition] = useState<{ top: number; left: number; width: number } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const timeZones = [
+        { code: "MX", label: "México", timeZone: "America/Mexico_City" },
+        { code: "CO", label: "Colombia", timeZone: "America/Bogota" },
+        { code: "BR", label: "Brasil", timeZone: "America/Sao_Paulo" },
+        { code: "ES", label: "España", timeZone: "Europe/Madrid" },
+        { code: "US", label: "EE.UU", timeZone: "America/New_York" },
+        { code: "UTC", label: "UTC", timeZone: "UTC" },
+    ];
+    const [selectedTimeZone, setSelectedTimeZone] = useState(timeZones[0]);
+
+    useEffect(() => {
+        if (!selectedPlayer) return;
+        const found = timeZones.find((z) => z.timeZone === selectedPlayer.timeZone);
+        setSelectedTimeZone(found || timeZones[0]);
+    }, [selectedPlayer?.timeZone]);
+
 
     // Estado para controlar qué inputs de subitem están abiertos
     const [openSubItemInputs, setOpenSubItemInputs] = useState<{ [entryName: string]: boolean }>({});
@@ -88,6 +104,9 @@ const PlayerModal: React.FC<Props> = ({
         Monk: { male: "/Monk.gif", female: "/MonkFemale.gif" },
         "Exalted Monk": { male: "/Monk.gif", female: "/MonkFemale.gif" },
     };
+
+
+
 
     const vocationGifUrl =
         vocationGifs[selectedPlayer.vocation]?.[selectedPlayer.sex.toLowerCase()] ||
@@ -451,6 +470,7 @@ const PlayerModal: React.FC<Props> = ({
             );
         }
 
+
         return (
             <div className="flex space-x-2 items-center ml-6 mb-2">
                 <input
@@ -512,6 +532,47 @@ const PlayerModal: React.FC<Props> = ({
                                     {selectedPlayer.status}
                                 </span>
                             </p>
+                            <p className="text-sm text-gray-600">
+                                Hora actual: {new Date().toLocaleTimeString("en-US", {
+                                    timeZone: selectedTimeZone.timeZone,
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: false, // o true si prefieres formato 12h
+                                })}
+                            </p>
+                            <select
+                                className="border px-2 py-1 rounded text-sm mt-1"
+                                value={selectedTimeZone.code}
+                                onChange={(e) => {
+                                    const newCode = e.target.value;
+                                    const newZone = timeZones.find((z) => z.code === newCode);
+                                    if (!newZone || !selectedPlayer) return;
+
+                                    setSelectedTimeZone(newZone);
+
+                                    setAllMembers((prev) => {
+                                        const updatedMembers = prev.map((member) =>
+                                            member.name === selectedPlayer.name
+                                                ? { ...member, timeZone: newZone.timeZone }
+                                                : member
+                                        );
+
+                                        // Actualiza selectedPlayer con el dato nuevo
+                                        const updatedPlayer = updatedMembers.find((m) => m.name === selectedPlayer.name) || null;
+                                        setSelectedPlayer(updatedPlayer);
+
+                                        return updatedMembers;
+                                    });
+                                }}
+
+                            >
+                                {timeZones.map((zone) => (
+                                    <option key={zone.code} value={zone.code}>
+                                        {zone.label}
+                                    </option>
+                                ))}
+                            </select>
+
 
                         </div>
                         <img src={vocationGifUrl} alt="Vocation gif" className="w-20 h-20 ml-4 object-contain" />

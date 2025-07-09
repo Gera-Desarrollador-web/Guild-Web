@@ -66,10 +66,14 @@ const App: React.FC = () => {
       const loadedData: Record<string, typeof emptyData> = {};
       let loadedCheckedItems: CheckedItems = {};
 
+      // Declarar membersFromDb aquí, fuera del if, para que esté disponible
+      let membersFromDb: GuildMember[] = [];
+
       if (snap.exists()) {
         const data = snap.data();
         loadedCheckedItems = data.checkedItems || {};
-        const membersFromDb = data.allMembers || [];
+        membersFromDb = data.allMembers || [];
+
         membersFromDb.forEach((m: GuildMember) => {
           if (
             m.data &&
@@ -82,17 +86,17 @@ const App: React.FC = () => {
               typeof boss === "string"
                 ? { name: boss, subItems: [] }
                 : {
-                    name: boss.name ?? "",
-                    subItems: Array.isArray(boss.subItems) ? boss.subItems : [],
-                  }
+                  name: boss.name ?? "",
+                  subItems: Array.isArray(boss.subItems) ? boss.subItems : [],
+                }
             );
             const quests: BossEntry[] = m.data.quests.map((quest: any) =>
               typeof quest === "string"
                 ? { name: quest, subItems: [] }
                 : {
-                    name: quest.name ?? "",
-                    subItems: Array.isArray(quest.subItems) ? quest.subItems : [],
-                  }
+                  name: quest.name ?? "",
+                  subItems: Array.isArray(quest.subItems) ? quest.subItems : [],
+                }
             );
 
             loadedData[m.name] = {
@@ -109,6 +113,9 @@ const App: React.FC = () => {
 
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
+          // Ahora sí membersFromDb está definido aquí
+          const memberFromDb = membersFromDb.find((m) => m.name === member.name);
+
           try {
             const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(
               member.name
@@ -130,6 +137,7 @@ const App: React.FC = () => {
                 reason: d.reason,
               })),
               data: loadedData[member.name] ?? emptyData,
+              timeZone: memberFromDb?.timeZone || "America/Mexico_City",
             };
           } catch (e) {
             console.warn(`Error cargando personaje ${member.name}`, e);
@@ -141,6 +149,7 @@ const App: React.FC = () => {
               sex: "unknown",
               deaths: [],
               data: loadedData[member.name] ?? emptyData,
+              timeZone: memberFromDb?.timeZone || "America/Mexico_City",
             };
           }
         })
@@ -158,6 +167,7 @@ const App: React.FC = () => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     loadData().then(() => setHasLoadedOnce(true));
