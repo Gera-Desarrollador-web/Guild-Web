@@ -4,8 +4,12 @@ import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import isEqual from "lodash.isequal";
 import { GuildMember, CheckedItems } from "./types";
+import LoginGate from "./components/LoginGate";
 
 type BossEntry = { name: string; subItems: string[] };
+
+const AUTH_KEY = "guildAppAuth";
+const AUTH_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 días en ms
 
 const App: React.FC = () => {
   const guildName = "Twenty Thieves";
@@ -21,6 +25,7 @@ const App: React.FC = () => {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [originalCheckedItems, setOriginalCheckedItems] = useState<CheckedItems>({});
   const [skipSaveOnFirstLoad, setSkipSaveOnFirstLoad] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const previousAllMembersRef = useRef<GuildMember[]>([]);
 
@@ -41,7 +46,9 @@ const App: React.FC = () => {
     setError("");
 
     try {
-      const guildUrl = `https://api.tibiadata.com/v4/guild/${encodeURIComponent(guildName)}`;
+      const guildUrl = `https://api.tibiadata.com/v4/guild/${encodeURIComponent(
+        guildName
+      )}`;
       const guildRes = await fetch(guildUrl);
       const guildData = await guildRes.json();
       const basicMembers = guildData.guild.members || [];
@@ -51,13 +58,12 @@ const App: React.FC = () => {
 
       const emptyData = {
         bosses: [] as BossEntry[],
-        quests: [] as BossEntry[], // Ahora quests también con subItems
+        quests: [] as BossEntry[],
         chares: [] as string[],
         notas: [] as string[],
       };
 
       const loadedData: Record<string, typeof emptyData> = {};
-
       let loadedCheckedItems: CheckedItems = {};
 
       if (snap.exists()) {
@@ -72,12 +78,21 @@ const App: React.FC = () => {
             Array.isArray(m.data.chares) &&
             Array.isArray(m.data.notas)
           ) {
-            // Convertir bosses y quests si son strings a objetos con subItems vacíos
             const bosses: BossEntry[] = m.data.bosses.map((boss: any) =>
-              typeof boss === "string" ? { name: boss, subItems: [] } : { name: boss.name ?? "", subItems: Array.isArray(boss.subItems) ? boss.subItems : [] }
+              typeof boss === "string"
+                ? { name: boss, subItems: [] }
+                : {
+                    name: boss.name ?? "",
+                    subItems: Array.isArray(boss.subItems) ? boss.subItems : [],
+                  }
             );
             const quests: BossEntry[] = m.data.quests.map((quest: any) =>
-              typeof quest === "string" ? { name: quest, subItems: [] } : { name: quest.name ?? "", subItems: Array.isArray(quest.subItems) ? quest.subItems : [] }
+              typeof quest === "string"
+                ? { name: quest, subItems: [] }
+                : {
+                    name: quest.name ?? "",
+                    subItems: Array.isArray(quest.subItems) ? quest.subItems : [],
+                  }
             );
 
             loadedData[m.name] = {
@@ -95,7 +110,9 @@ const App: React.FC = () => {
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
           try {
-            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(member.name)}`;
+            const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(
+              member.name
+            )}`;
             const characterRes = await fetch(characterUrl);
             const characterData = await characterRes.json();
             const char = characterData.character.character;
@@ -197,7 +214,8 @@ const App: React.FC = () => {
               const bossName = item.name.toLowerCase();
               const subItems: string[] = item.subItems || [];
 
-              const bossMatch = bossName.includes(filter) && markedItems[item.name] === true;
+              const bossMatch =
+                bossName.includes(filter) && markedItems[item.name] === true;
 
               const subMatch = subItems.some((sub) => {
                 const subLower = sub.toLowerCase();
@@ -225,6 +243,35 @@ const App: React.FC = () => {
 
     return members;
   }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems]);
+
+  // ---- Lógica de autenticación con localStorage y expiración ----
+  useEffect(() => {
+    const authDataRaw = localStorage.getItem(AUTH_KEY);
+    if (authDataRaw) {
+      try {
+        const authData = JSON.parse(authDataRaw);
+        if (authData.timestamp && Date.now() - authData.timestamp < AUTH_DURATION_MS) {
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem(AUTH_KEY);
+        }
+      } catch {
+        localStorage.removeItem(AUTH_KEY);
+      }
+    }
+  }, []);
+
+  const handleAuthenticated = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem(
+      AUTH_KEY,
+      JSON.stringify({ timestamp: Date.now() })
+    );
+  };
+
+  if (!isAuthenticated) {
+    return <LoginGate onAuthenticated={handleAuthenticated} />;
+  }
 
   return (
     <div className="p-4 max-w-7xl mx-auto ">
