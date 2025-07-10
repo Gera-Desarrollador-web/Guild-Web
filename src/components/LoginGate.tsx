@@ -1,5 +1,6 @@
-// src/components/LoginGate.tsx
 import React, { useState, useEffect } from "react";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../firebase"; // Asegúrate que la ruta sea correcta
 
 type Props = {
     onAuthenticated: () => void;
@@ -15,8 +16,22 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
     const [newPassword, setNewPassword] = useState("");
 
     useEffect(() => {
-        const saved = localStorage.getItem("customPassword");
-        if (saved) setCustomPassword(saved);
+        const fetchPassword = async () => {
+            try {
+                const docRef = doc(db, "config", "password");
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (typeof data.value === "string") {
+                        setCustomPassword(data.value);
+                    }
+                }
+            } catch (err) {
+                console.error("Error al cargar contraseña:", err);
+            }
+        };
+
+        fetchPassword();
     }, []);
 
     const handleLogin = () => {
@@ -28,7 +43,7 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
         }
     };
 
-    const handleChangePassword = () => {
+ const handleChangePassword = async () => {
         if (masterInput !== DEFAULT_MASTER_PASSWORD) {
             alert("Contraseña maestra incorrecta");
             return;
@@ -38,9 +53,17 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
             alert("Nueva contraseña no puede estar vacía");
             return;
         }
-
-        localStorage.setItem("customPassword", newPassword);
-        setCustomPassword(newPassword);
+        try {
+            await setDoc(doc(db, "config", "password"), {
+                value: newPassword,
+            });
+            setCustomPassword(newPassword);
+            alert("Contraseña actualizada correctamente");
+            setChangeMode(false);
+        } catch (err) {
+            console.error("Error al guardar nueva contraseña:", err);
+            alert("Error al guardar contraseña");
+        }
         alert("Contraseña actualizada correctamente");
         setChangeMode(false);
     };
