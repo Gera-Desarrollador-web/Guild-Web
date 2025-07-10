@@ -245,7 +245,6 @@ const PlayerModal: React.FC<Props> = ({
                 return;
             }
 
-            // Agregamos sin validar que sea miembro
             const updatedMembers = allMembers.map((member) =>
                 member.name === selectedPlayer.name
                     ? {
@@ -253,7 +252,10 @@ const PlayerModal: React.FC<Props> = ({
                         data: {
                             bosses: member.data?.bosses || [],
                             quests: member.data?.quests || [],
-                            chares: [...(member.data?.chares || []), trimmedItem],
+                            chares: [
+                                ...(member.data?.chares || []),
+                                trimmedItem.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()),
+                            ],
                             notas: member.data?.notas || [],
                         },
                     }
@@ -265,6 +267,7 @@ const PlayerModal: React.FC<Props> = ({
             setNewItem("");
             setShowSuggestions(false);
         }
+
         else if (activeTab === "bosses") {
             if ((currentList as BossEntry[]).some((b) => b.name.toLowerCase() === trimmedItem.toLowerCase())) {
                 alert("Este boss ya está agregado.");
