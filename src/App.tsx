@@ -301,7 +301,7 @@ const App: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         <div className="bg-[#2d1a0f] rounded-xl border-2 border-[#5a2800] shadow-lg overflow-hidden">
           <div className="p-2 sm:p-3 bg-[#5a2800] border-b-2 border-[#3a1800]">
-            <h2 className="text-base sm:text-lg font-bold text-[#e8d8b0] font-tibia">Guild Management</h2>
+            <h2 className="text-base sm:text-lg font-bold text-[#e8d8b0] font-tibia">Gestión del gremio</h2>
           </div>
           
           <GuildManager
