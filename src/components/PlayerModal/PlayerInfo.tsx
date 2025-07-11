@@ -45,6 +45,10 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                 </div>
                 <div className="flex-1">
                     <div className="ml-8 grid grid-cols-1 md:grid-cols-2 gap-1 text-[#e8d5b5]">
+                           <p>
+                            <span className="font-bold">Nombre: </span>
+                            {selectedPlayer.name}
+                        </p>
                         <p>
                             <span className="font-bold">Lvl: </span>
                             {selectedPlayer.level}
@@ -57,7 +61,6 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                             <span className="font-bold">Vocación: </span>
                             {selectedPlayer.vocation}
                         </p>
-
                         <p>
                             <span className="font-bold">Estado: </span>
                             <span className={selectedPlayer.status.toLowerCase() === "online"
@@ -76,6 +79,7 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                                 hour12: false,
                             })}
                         </p>
+                        
                     </div>
 
                     <select
