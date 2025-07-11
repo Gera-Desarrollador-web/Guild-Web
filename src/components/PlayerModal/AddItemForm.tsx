@@ -7,6 +7,7 @@ type AddItemFormProps = {
     onNewItemChange: (value: string) => void;
     onShowSuggestionsChange: (show: boolean) => void;
     onAddItem: () => void;
+    inputPosition: { top: number; left: number; width: number } | null; //
     onSuggestionClick: (name: string) => void;
     className?: string;
 };
@@ -19,6 +20,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     onShowSuggestionsChange,
     onAddItem,
     onSuggestionClick,
+    
     className = "",
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -31,11 +33,11 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         if (inputRef.current && showSuggestions) {
             const inputRect = inputRef.current.getBoundingClientRect();
             const modalRect = inputRef.current.closest('.modal-container')?.getBoundingClientRect();
-            
+
             // Calcular espacio disponible
             const spaceBelow = window.innerHeight - inputRect.bottom;
             const maxHeight = Math.min(240, spaceBelow - 20); // 240px máximo o espacio disponible
-            
+
             // Posición absoluta dentro del modal pero con overflow visible
             setSuggestionStyle({
                 position: 'fixed', // Usamos fixed para que no se mueva con scroll
@@ -53,15 +55,15 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
         if (showSuggestions) {
             updateSuggestionPosition();
             const modalContainer = inputRef.current?.closest('.modal-container');
-            
+
             const observer = new MutationObserver(updateSuggestionPosition);
             if (modalContainer) {
                 observer.observe(modalContainer, { attributes: true });
             }
-            
+
             window.addEventListener('resize', updateSuggestionPosition);
             window.addEventListener('scroll', updateSuggestionPosition, true);
-            
+
             return () => {
                 observer.disconnect();
                 window.removeEventListener('resize', updateSuggestionPosition);
@@ -99,7 +101,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
     }, []);
 
     const getPlaceholderText = () => {
-        switch(activeTab) {
+        switch (activeTab) {
             case "bosses": return "Añadir nuevo boss...";
             case "quests": return "Añadir nueva quest...";
             case "chares": return "Añadir nuevo character...";
@@ -135,9 +137,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
                         }}
                     />
                 </div>
-                
-                <button 
-                    onClick={onAddItem} 
+
+                <button
+                    onClick={onAddItem}
                     className="sm:self-center mt-4 bg-[#5a2800] hover:bg-[#7a3a00] text-[#e8d8b0] font-medium px-6 py-3 rounded-lg border border-[#3a1800] transition-colors shadow-md"
                     disabled={!newItem.trim()}
                 >
