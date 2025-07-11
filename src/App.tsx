@@ -278,34 +278,30 @@ const App: React.FC = () => {
   if (!isAuthenticated) {
     return <LoginGate onAuthenticated={handleAuthenticated} />;
   }
-
   return (
-    <div className="min-h-screen bg-[#1a1008] bg-[url('https://www.tibia.com/images/global/content/background-texture.png')] bg-repeat p-4 md:p-6">
-      {/* Header estilo Tibia */}
-      <header className="max-w-7xl mx-auto mb-6 relative"> {/* Añadido relative para posicionamiento absoluto interno */}
-  <div className="flex flex-col md:flex-row items-center">
-    {/* Logo (opcional, si lo quieres a la izquierda) */}
-    <div className="w-full md:w-auto mb-4 md:mb-0">
-      <div className="bg-[url('https://www.tibia.com/images/global/header/logo-artwork-top.png')] bg-no-repeat bg-contain h-24 w-full md:w-64"></div>
-    </div>
+    <div className="min-h-screen bg-[#1a1008] bg-[url('https://www.tibia.com/images/global/content/background-texture.png')] bg-repeat px-2 py-1 sm:p-4">
+      {/* Header optimizado para móviles */}
+      <header className="max-w-7xl mx-auto mb-1 sm:mb-4 relative p-0 sm:p-8">
+        <div className="flex flex-col sm:flex-row items-center">
+          {/* Logo con tamaño reducido en móviles */}
+         
 
-    {/* Título (centrado absoluto en pantallas grandes) */}
-    <div className="w-full md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:text-center">
-      <h1 className="text-3xl md:text-4xl font-bold text-[#e8d8b0] font-tibia">
-        {guildName}
-      </h1>
-    </div>
+          {/* Título con tamaño responsivo */}
+          <div className="w-full sm:absolute sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:text-center mt-1 sm:mt-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#e8d8b0] font-tibia">
+              {guildName}
+            </h1>
+          </div>
 
-    {/* Botón (se mantiene a la derecha) */}
-    <div className="w-full md:w-auto mt-4 md:mt-0 md:ml-auto"> {/* md:ml-auto lo empuja a la derecha */}
-    </div>
-  </div>
-</header>
-      {/* Contenido principal */}
+         
+        </div>
+      </header>
+
+      {/* Contenido principal con espaciado ajustado */}
       <div className="max-w-7xl mx-auto">
         <div className="bg-[#2d1a0f] rounded-xl border-2 border-[#5a2800] shadow-lg overflow-hidden">
-          <div className="p-4 bg-[#5a2800] border-b-2 border-[#3a1800]">
-            <h2 className="text-xl font-bold text-[#e8d8b0] font-tibia">Gestión del gremio</h2>
+          <div className="p-2 sm:p-3 bg-[#5a2800] border-b-2 border-[#3a1800]">
+            <h2 className="text-base sm:text-lg font-bold text-[#e8d8b0] font-tibia">Guild Management</h2>
           </div>
           
           <GuildManager
@@ -328,11 +324,11 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer estilo Tibia */}
-      <footer className="max-w-7xl mx-auto mt-8 text-center text-[#e8d8b0] text-sm">
-        <div className=" pt-4">
+      {/* Footer con tamaño de texto responsivo */}
+      <footer className="max-w-7xl mx-auto mt-2 sm:mt-4 text-center text-[#e8d8b0] text-xs sm:text-sm">
+        <div className="border-t-2 border-[#5a2800] pt-2 sm:pt-3">
           <p>© {new Date().getFullYear()} {guildName} Guild Manager</p>
-          <p className="mt-2">Not affiliated with Tibia or CipSoft GmbH</p>
+          <p className="mt-0 sm:mt-1">Not affiliated with Tibia or CipSoft GmbH</p>
         </div>
       </footer>
     </div>
