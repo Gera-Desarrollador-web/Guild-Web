@@ -3,32 +3,48 @@ export type BossEntry = {
   subItems: string[];
 };
 
+export type DeathEntry = {
+  level: number;
+  time: number;
+  reason: string;
+};
+
+export type LevelHistoryEntry = {
+  date: string;
+  level: number;
+};
+
 export type GuildMember = {
   name: string;
   level: number;
   vocation: string;
   sex: string;
   status: string;
-  deaths?: {
-    level: number;
-    time: number;
-    reason: string;
-  }[];
+  imageUrl?: string;
+  deaths?: DeathEntry[];
   data?: {
-    bosses: BossEntry[];   // Cambia bosses a array de objetos
+    bosses: BossEntry[];
     quests: BossEntry[];
     chares: string[];
     notas: string[];
   };
-  levelHistory?: { date: string; level: number }[]; // <-- aquí el historial de niveles con fechas ISO
-  timeZone?: string; 
+  levelHistory?: LevelHistoryEntry[];
+  timeZone?: string;
 };
 
 export type CheckedItems = {
   [playerName: string]: {
-    bosses?: { [itemOrSubitem: string]: boolean }; // las keys pueden ser "BossName" o "BossName::SubItemName"
-    quests?: { [item: string]: boolean };
+    bosses?: { [itemOrSubitem: string]: boolean };
+    quests?: { [itemOrSubitem: string]: boolean };
     chares?: { [item: string]: boolean };
     notas?: { [item: string]: boolean };
   };
 };
+
+export type TimeZoneOption = {
+  code: string;
+  label: string;
+  timeZone: string;
+};
+
+export type Tab = "bosses" | "quests" | "chares" | "notas";

@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+@font-face {
+    font-family: 'Tibia';
+    src: url('https://www.tibia.com/images/global/fonts/tibia.ttf') format('truetype');
+}
+
+.font-tibia {
+    font-family: 'Tibia', sans-serif;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    background-color: #1a1008;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #5a2800;
+    border-radius: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #7a3a00;
+}

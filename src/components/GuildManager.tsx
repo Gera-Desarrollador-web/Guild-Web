@@ -2,8 +2,8 @@ import React from "react";
 import { GuildMember } from "../types";
 import GuildTableHeader from "./GuildTableHeader";
 import GuildMembersTable from "./GuildMembersTable";
-import PlayerModal from "./PlayerModal";
-import GuildTitle from "./GuildTitle";
+import PlayerModal from "./PlayerModal/PlayerModal";
+
 
 type Props = {
     allMembers: GuildMember[];
@@ -35,7 +35,6 @@ type Props = {
             };
         }>
     >;
-
 };
 
 const GuildManager: React.FC<Props> = ({
@@ -54,51 +53,59 @@ const GuildManager: React.FC<Props> = ({
     setSelectedPlayer,
     checkedItems,
     setCheckedItems,
-
 }) => {
     return (
-        <div >
-            <GuildTitle />
-            <GuildTableHeader
-                totalMembers={allMembers.length}
-                onlineCount={allMembers.filter(m => m.status.toLowerCase() === "online").length}
-                offlineCount={allMembers.filter(m => m.status.toLowerCase() !== "online").length}
-                showOnlyOnline={showOnlyOnline}
-                setShowOnlyOnline={setShowOnlyOnline}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                questFilter={questFilter}
-                setQuestFilter={setQuestFilter}
-            />
+        <div className="bg-[#1a1008]   md:p-6">
+            <div className="max-w-7xl mx-auto">
+                
+                <div className="bg-[#2d1a0f]   border-[#5d3b1e] ">
+                    <GuildTableHeader
+                        totalMembers={allMembers.length}
+                        onlineCount={allMembers.filter(m => m.status.toLowerCase() === "online").length}
+                        offlineCount={allMembers.filter(m => m.status.toLowerCase() !== "online").length}
+                        showOnlyOnline={showOnlyOnline}
+                        setShowOnlyOnline={setShowOnlyOnline}
+                        sortBy={sortBy}
+                        setSortBy={setSortBy}
+                        questFilter={questFilter}
+                        setQuestFilter={setQuestFilter}
+                    />
+                </div>
 
-            {loading && <p className="text-center">Cargando...</p>}
-            {error && <p className="text-red-500 text-center">{error}</p>}
+                <div className="bg-[#2d1a0f] border-2 border-[#5d3b1e] shadow-lg ">
+                    {loading && (
+                        <p className="text-center text-[#e8d5b5] py-8">Cargando miembros...</p>
+                    )}
+                    
+                    {error && (
+                        <p className="text-center text-[#ff6b6b] py-8">{error}</p>
+                    )}
 
-            {!loading && filteredMembers.length > 0 && (
-                <GuildMembersTable
-                    members={filteredMembers}
-                    onPlayerSelect={setSelectedPlayer}
-                    checkedItems={checkedItems}
-                    setCheckedItems={setCheckedItems}
-                />
-            )}
+                    {!loading && filteredMembers.length > 0 && (
+                        <GuildMembersTable
+                            members={filteredMembers}
+                            onPlayerSelect={setSelectedPlayer}
+                            checkedItems={checkedItems}
+                            setCheckedItems={setCheckedItems}
+                        />
+                    )}
 
-            {!loading && filteredMembers.length === 0 && !error && (
-                <p className="text-center">No hay jugadores para mostrar.</p>
-            )}
+                    {!loading && filteredMembers.length === 0 && !error && (
+                        <p className="text-center text-[#e8d5b5] py-8">No hay jugadores para mostrar.</p>
+                    )}
+                </div>
 
-            {selectedPlayer && (
-                <PlayerModal
-                    selectedPlayer={selectedPlayer}
-                    setSelectedPlayer={setSelectedPlayer}
-                    allMembers={allMembers}
-                    setAllMembers={setAllMembers}
-                    checkedItems={checkedItems}
-                    setCheckedItems={setCheckedItems}
-
-
-                />
-            )}
+                {selectedPlayer && (
+                    <PlayerModal
+                        selectedPlayer={selectedPlayer}
+                        setSelectedPlayer={setSelectedPlayer}
+                        allMembers={allMembers}
+                        setAllMembers={setAllMembers}
+                        checkedItems={checkedItems}
+                        setCheckedItems={setCheckedItems}
+                    />
+                )}
+            </div>
         </div>
     );
 };

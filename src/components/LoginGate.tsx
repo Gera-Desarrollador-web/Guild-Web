@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase"; // Asegúrate que la ruta sea correcta
+import { db } from "../firebase";
 
 type Props = {
     onAuthenticated: () => void;
@@ -14,6 +14,7 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
     const [changeMode, setChangeMode] = useState(false);
     const [masterInput, setMasterInput] = useState("");
     const [newPassword, setNewPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const fetchPassword = async () => {
@@ -43,7 +44,7 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
         }
     };
 
- const handleChangePassword = async () => {
+    const handleChangePassword = async () => {
         if (masterInput !== DEFAULT_MASTER_PASSWORD) {
             alert("Contraseña maestra incorrecta");
             return;
@@ -53,6 +54,8 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
             alert("Nueva contraseña no puede estar vacía");
             return;
         }
+
+        setIsLoading(true);
         try {
             await setDoc(doc(db, "config", "password"), {
                 value: newPassword,
@@ -60,70 +63,117 @@ const LoginGate: React.FC<Props> = ({ onAuthenticated }) => {
             setCustomPassword(newPassword);
             alert("Contraseña actualizada correctamente");
             setChangeMode(false);
+            setMasterInput("");
+            setNewPassword("");
         } catch (err) {
             console.error("Error al guardar nueva contraseña:", err);
             alert("Error al guardar contraseña");
+        } finally {
+            setIsLoading(false);
         }
-        alert("Contraseña actualizada correctamente");
-        setChangeMode(false);
     };
 
     return (
-        <div className="flex flex-col items-center justify-center h-screen gap-4">
-            <h2 className="text-xl font-bold">🔒 Acceso protegido</h2>
-
-            {!changeMode ? (
-                <>
-                    <input
-                        type="password"
-                        placeholder="Ingresa contraseña"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        className="border px-4 py-2 rounded"
-                    />
-                    <button
-                        onClick={handleLogin}
-                        className="bg-blue-500 text-white px-4 py-2 rounded"
-                    >
-                        Entrar
-                    </button>
-                    <button
-                        onClick={() => setChangeMode(true)}
-                        className="text-sm text-gray-600 underline"
-                    >
-                        Cambiar contraseña
-                    </button>
-                </>
-            ) : (
-                <div className="w-64 flex flex-col gap-2 border p-4 rounded bg-gray-100">
-                    <input
-                        type="password"
-                        placeholder="Contraseña maestra"
-                        value={masterInput}
-                        onChange={(e) => setMasterInput(e.target.value)}
-                        className="border px-2 py-1 rounded"
-                    />
-                    <input
-                        type="password"
-                        placeholder="Nueva contraseña"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="border px-2 py-1 rounded"
-                    />
-                    <button
-                        onClick={handleChangePassword}
-                        className="bg-green-500 text-white px-2 py-1 rounded"
-                    >
-                        Guardar nueva contraseña
-                    </button>
-                    <button
-                        onClick={() => setChangeMode(false)}
-                        className="text-xs text-red-500 underline mt-2"
-                    >
-                        Cancelar
-                    </button>
+        <div className="min-h-screen flex items-center justify-center bg-[#1a1008] bg-[url('https://www.tibia.com/images/global/content/background-texture.png')] bg-repeat p-4">
+            <div className="w-full max-w-md bg-[#2d1a0f] border-2 border-[#5a2800] rounded-xl shadow-lg overflow-hidden">
+                {/* Cabecera estilo Tibia */}
+                <div className="bg-[#5a2800] p-4 border-b-2 border-[#3a1800]">
+                    <h2 className="text-2xl font-bold text-[#e8d8b0] text-center font-tibia">
+                        {changeMode ? "Cambiar Contraseña" : "Acceso Protegido"}
+                    </h2>
                 </div>
-            )}
+                
+                <div className="p-6">
+                    {!changeMode ? (
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[#c4a97a] text-sm font-medium mb-2">
+                                    Contraseña
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Ingresa la contraseña"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    className="w-full px-4 py-3 bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] rounded-lg focus:ring-2 focus:ring-[#c4a97a] focus:border-[#c4a97a] outline-none transition placeholder-[#c4a97a]"
+                                    onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            <button
+                                onClick={handleLogin}
+                                className="w-full bg-[#5a2800] hover:bg-[#7a3a00] text-[#e8d8b0] font-bold py-3 px-4 rounded-lg border border-[#3a1800] transition duration-200 shadow-md"
+                            >
+                                Entrar
+                            </button>
+                            
+                            <div className="text-center">
+                                <button
+                                    onClick={() => setChangeMode(true)}
+                                    className="text-[#c4a97a] hover:text-[#e8d8b0] text-sm underline transition"
+                                >
+                                    Cambiar contraseña
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-[#c4a97a] text-sm font-medium mb-2">
+                                    Contraseña Maestra Actual
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Ingresa la contraseña maestra"
+                                    value={masterInput}
+                                    onChange={(e) => setMasterInput(e.target.value)}
+                                    className="w-full px-4 py-3 bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] rounded-lg focus:ring-2 focus:ring-[#c4a97a] focus:border-[#c4a97a] outline-none transition placeholder-[#c4a97a]"
+                                    autoFocus
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-[#c4a97a] text-sm font-medium mb-2">
+                                    Nueva Contraseña
+                                </label>
+                                <input
+                                    type="password"
+                                    placeholder="Ingresa la nueva contraseña"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    className="w-full px-4 py-3 bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] rounded-lg focus:ring-2 focus:ring-[#c4a97a] focus:border-[#c4a97a] outline-none transition placeholder-[#c4a97a]"
+                                />
+                            </div>
+                            
+                            <div className="flex space-x-4">
+                                <button
+                                    onClick={() => {
+                                        setChangeMode(false);
+                                        setMasterInput("");
+                                        setNewPassword("");
+                                    }}
+                                    className="flex-1 bg-[#2d1a0f] hover:bg-[#3a1800] text-[#e8d8b0] font-bold py-3 px-4 rounded-lg border border-[#5a2800] transition duration-200"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleChangePassword}
+                                    disabled={isLoading}
+                                    className="flex-1 bg-[#5a2800] hover:bg-[#7a3a00] text-[#e8d8b0] font-bold py-3 px-4 rounded-lg border border-[#3a1800] transition duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {isLoading ? "Guardando..." : "Guardar"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                {/* Footer estilo Tibia */}
+                <div className="bg-[#1a1008] p-3 text-center text-[#c4a97a] text-xs border-t border-[#5a2800]">
+                    Sistema de gestión de guild - Twenty Thieves
+                </div>
+            </div>
         </div>
     );
 };

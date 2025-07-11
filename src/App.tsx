@@ -66,7 +66,6 @@ const App: React.FC = () => {
       const loadedData: Record<string, typeof emptyData> = {};
       let loadedCheckedItems: CheckedItems = {};
 
-      // Declarar membersFromDb aquí, fuera del if, para que esté disponible
       let membersFromDb: GuildMember[] = [];
 
       if (snap.exists()) {
@@ -113,7 +112,6 @@ const App: React.FC = () => {
 
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
-          // Ahora sí membersFromDb está definido aquí
           const memberFromDb = membersFromDb.find((m) => m.name === member.name);
 
           try {
@@ -167,7 +165,6 @@ const App: React.FC = () => {
       setLoading(false);
     }
   };
-
 
   useEffect(() => {
     loadData().then(() => setHasLoadedOnce(true));
@@ -254,7 +251,6 @@ const App: React.FC = () => {
     return members;
   }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems]);
 
-  // ---- Lógica de autenticación con localStorage y expiración ----
   useEffect(() => {
     const authDataRaw = localStorage.getItem(AUTH_KEY);
     if (authDataRaw) {
@@ -284,24 +280,61 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="p-4 max-w-7xl mx-auto ">
-      <GuildManager
-        allMembers={allMembers}
-        setAllMembers={setAllMembers}
-        loading={loading}
-        error={error}
-        showOnlyOnline={showOnlyOnline}
-        setShowOnlyOnline={setShowOnlyOnline}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        questFilter={questFilter}
-        setQuestFilter={setQuestFilter}
-        filteredMembers={filteredMembers}
-        selectedPlayer={selectedPlayer}
-        setSelectedPlayer={setSelectedPlayer}
-        checkedItems={checkedItems}
-        setCheckedItems={setCheckedItems}
-      />
+    <div className="min-h-screen bg-[#1a1008] bg-[url('https://www.tibia.com/images/global/content/background-texture.png')] bg-repeat p-4 md:p-6">
+      {/* Header estilo Tibia */}
+      <header className="max-w-7xl mx-auto mb-6 relative"> {/* Añadido relative para posicionamiento absoluto interno */}
+  <div className="flex flex-col md:flex-row items-center">
+    {/* Logo (opcional, si lo quieres a la izquierda) */}
+    <div className="w-full md:w-auto mb-4 md:mb-0">
+      <div className="bg-[url('https://www.tibia.com/images/global/header/logo-artwork-top.png')] bg-no-repeat bg-contain h-24 w-full md:w-64"></div>
+    </div>
+
+    {/* Título (centrado absoluto en pantallas grandes) */}
+    <div className="w-full md:absolute md:left-1/2 md:transform md:-translate-x-1/2 md:text-center">
+      <h1 className="text-3xl md:text-4xl font-bold text-[#e8d8b0] font-tibia">
+        {guildName}
+      </h1>
+    </div>
+
+    {/* Botón (se mantiene a la derecha) */}
+    <div className="w-full md:w-auto mt-4 md:mt-0 md:ml-auto"> {/* md:ml-auto lo empuja a la derecha */}
+    </div>
+  </div>
+</header>
+      {/* Contenido principal */}
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-[#2d1a0f] rounded-xl border-2 border-[#5a2800] shadow-lg overflow-hidden">
+          <div className="p-4 bg-[#5a2800] border-b-2 border-[#3a1800]">
+            <h2 className="text-xl font-bold text-[#e8d8b0] font-tibia">Guild Management</h2>
+          </div>
+          
+          <GuildManager
+            allMembers={allMembers}
+            setAllMembers={setAllMembers}
+            loading={loading}
+            error={error}
+            showOnlyOnline={showOnlyOnline}
+            setShowOnlyOnline={setShowOnlyOnline}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            questFilter={questFilter}
+            setQuestFilter={setQuestFilter}
+            filteredMembers={filteredMembers}
+            selectedPlayer={selectedPlayer}
+            setSelectedPlayer={setSelectedPlayer}
+            checkedItems={checkedItems}
+            setCheckedItems={setCheckedItems}
+          />
+        </div>
+      </div>
+
+      {/* Footer estilo Tibia */}
+      <footer className="max-w-7xl mx-auto mt-8 text-center text-[#e8d8b0] text-sm">
+        <div className=" pt-4">
+          <p>© {new Date().getFullYear()} {guildName} Guild Manager</p>
+          <p className="mt-2">Not affiliated with Tibia or CipSoft GmbH</p>
+        </div>
+      </footer>
     </div>
   );
 };
