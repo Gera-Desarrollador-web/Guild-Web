@@ -49,10 +49,10 @@ const PlayerModal: React.FC<Props> = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const [selectedTimeZone, setSelectedTimeZone] = useState(timeZones[0]);
     const modalRef = useRef<HTMLDivElement>(null);
-    const [editingItem, setEditingItem] = useState<{ 
-        name: string, 
+    const [editingItem, setEditingItem] = useState<{
+        name: string,
         originalName: string,
-        isNew?: boolean 
+        isNew?: boolean
     } | null>(null);
     const [editingSubItem, setEditingSubItem] = useState<{
         parentItem: string;
@@ -68,15 +68,16 @@ const PlayerModal: React.FC<Props> = ({
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+            const target = event.target as HTMLElement;
+            if (modalRef.current &&
+                !modalRef.current.contains(target) &&
+                !target.closest('.suggestions-container')) {
                 close();
             }
         }
 
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     if (!selectedPlayer) return null;
@@ -244,7 +245,7 @@ const PlayerModal: React.FC<Props> = ({
             setNewItem("");
             setShowSuggestions(false);
         } else if (activeTab === "bosses" || activeTab === "quests") {
-            if ((currentList as any[]).some((item) => 
+            if ((currentList as any[]).some((item) =>
                 (item.name || item).toLowerCase() === trimmedItem.toLowerCase())) {
                 alert(`Este ${activeTab.slice(0, -1)} ya está agregado.`);
                 return;
@@ -340,8 +341,8 @@ const PlayerModal: React.FC<Props> = ({
     };
 
     const startEditing = (itemName: string) => {
-        setEditingItem({ 
-            name: itemName, 
+        setEditingItem({
+            name: itemName,
             originalName: itemName,
             isNew: false
         });
@@ -385,9 +386,9 @@ const PlayerModal: React.FC<Props> = ({
                                 item.subItems.forEach((subItem: string) => {
                                     const oldKey = `${editingItem.originalName}::${subItem}`;
                                     const newKey = `${trimmedName}::${subItem}`;
-                                    
+
                                     if (newCheckedItems[playerName][activeTab]?.[oldKey]) {
-                                        newCheckedItems[playerName][activeTab]![newKey] = 
+                                        newCheckedItems[playerName][activeTab]![newKey] =
                                             newCheckedItems[playerName][activeTab]![oldKey];
                                         delete newCheckedItems[playerName][activeTab]![oldKey];
                                     }
@@ -395,7 +396,7 @@ const PlayerModal: React.FC<Props> = ({
 
                                 // Actualizar item principal
                                 if (newCheckedItems[playerName][activeTab]?.[editingItem.originalName]) {
-                                    newCheckedItems[playerName][activeTab]![trimmedName] = 
+                                    newCheckedItems[playerName][activeTab]![trimmedName] =
                                         newCheckedItems[playerName][activeTab]![editingItem.originalName];
                                     delete newCheckedItems[playerName][activeTab]![editingItem.originalName];
                                 }
@@ -456,9 +457,9 @@ const PlayerModal: React.FC<Props> = ({
         const subItemExists = allMembers.some(member => {
             const items = member.data?.[activeTab];
             if (!items) return false;
-            
-            return items.some((item: any) => 
-                item.name === editingSubItem.parentItem && 
+
+            return items.some((item: any) =>
+                item.name === editingSubItem.parentItem &&
                 item.subItems.includes(trimmedName) &&
                 trimmedName !== editingSubItem.originalSubItem
             );
@@ -481,9 +482,9 @@ const PlayerModal: React.FC<Props> = ({
                         if (newCheckedItems[playerName]?.[activeTab]) {
                             const oldKey = `${editingSubItem.parentItem}::${editingSubItem.originalSubItem}`;
                             const newKey = `${editingSubItem.parentItem}::${trimmedName}`;
-                            
+
                             if (newCheckedItems[playerName][activeTab]?.[oldKey]) {
-                                newCheckedItems[playerName][activeTab]![newKey] = 
+                                newCheckedItems[playerName][activeTab]![newKey] =
                                     newCheckedItems[playerName][activeTab]![oldKey];
                                 delete newCheckedItems[playerName][activeTab]![oldKey];
                             }
@@ -493,7 +494,7 @@ const PlayerModal: React.FC<Props> = ({
 
                     return {
                         ...item,
-                        subItems: item.subItems.map((s: string) => 
+                        subItems: item.subItems.map((s: string) =>
                             s === editingSubItem.originalSubItem ? trimmedName : s
                         )
                     };
@@ -536,12 +537,56 @@ const PlayerModal: React.FC<Props> = ({
                 .map((m) => m.name)
                 .slice(0, 5)
             : [];
-
     const onSuggestionClick = (name: string) => {
-        setNewItem(name);
-        setShowSuggestions(false);
-    };
+        if (!selectedPlayer) return;
 
+        // Verificar contra la lista actual de chares
+        const currentChares = selectedPlayer.data?.chares || [];
+        if (currentChares.some(c => c.toLowerCase() === name.toLowerCase())) {
+            alert("Este personaje ya está agregado");
+            return;
+        }
+
+        // Formatear nombre (primera letra mayúscula)
+        const formattedName = name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+        // Actualizar miembros
+        const updatedMembers = allMembers.map(member => {
+            if (member.name === selectedPlayer.name) {
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        bosses: member.data?.bosses || [],
+                        quests: member.data?.quests || [],
+                        chares: [...currentChares, formattedName],
+                        notas: member.data?.notas || []
+                    }
+                };
+            }
+            return member;
+        });
+
+        setAllMembers(updatedMembers);
+
+        // Actualizar el jugador seleccionado con los nuevos datos
+        const updatedPlayer = updatedMembers.find(m => m.name === selectedPlayer.name);
+        if (updatedPlayer) {
+            setSelectedPlayer({
+                ...updatedPlayer,
+                data: {
+                    ...updatedPlayer.data,
+                    bosses: updatedPlayer.data?.bosses || [],
+                    quests: updatedPlayer.data?.quests || [],
+                    chares: updatedPlayer.data?.chares || [],
+                    notas: updatedPlayer.data?.notas || []
+                }
+            });
+        }
+
+        setShowSuggestions(false);
+        setNewItem("");
+    };
     const handleTimeZoneChange = (code: string) => {
         const newZone = timeZones.find((z) => z.code === code);
         if (!newZone || !selectedPlayer) return;

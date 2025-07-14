@@ -81,7 +81,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
 
     const handleInputBlur = () => {
         setTimeout(() => {
-            if (!suggestionsRef.current?.contains(document.activeElement)) {
+            const activeElement = document.activeElement;
+            if (!activeElement?.closest('.suggestions-container') &&
+                activeElement !== inputRef.current) {
                 setShowSuggestions(false);
                 onShowSuggestionsChange(false);
             }
@@ -178,8 +180,9 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
             {showSuggestions && filteredSuggestions.length > 0 && (
                 <ul
                     ref={suggestionsRef}
-                    className="fixed bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-y-auto custom-scrollbar"
+                    className="suggestions-container fixed bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-y-auto custom-scrollbar"
                     style={suggestionStyle}
+                    onMouseDown={(e) => e.preventDefault()} // Esto previene que el input pierda el foco
                 >
                     {filteredSuggestions.map((name) => (
                         <li
@@ -188,7 +191,7 @@ export const AddItemForm: React.FC<AddItemFormProps> = ({
                             onMouseDown={(e) => {
                                 e.preventDefault();
                                 onSuggestionClick(name);
-                                setShowSuggestions(false);
+                                inputRef.current?.focus(); // Opcional: mantener foco en input
                             }}
                         >
                             {name}
