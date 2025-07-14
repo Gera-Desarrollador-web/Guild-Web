@@ -12,6 +12,7 @@ type BossQuestListProps = {
     onRemoveItem: (itemName: string) => void;
     onRemoveSubItem: (itemName: string, subItem: string) => void;
     onAddSubItem: (entryName: string, subItem: string) => void;
+    onEditItem: (itemName: string) => void; // Nueva prop para edición
 };
 
 export const BossQuestList: React.FC<BossQuestListProps> = ({
@@ -22,7 +23,8 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
     onSubItemCheck,
     onRemoveItem,
     onRemoveSubItem,
-    onAddSubItem
+    onAddSubItem,
+    onEditItem // Nueva prop
 }) => {
     const getHeaderText = () => {
         return activeTab === "bosses" ? "Lista de Bosses" : "Lista de Quests";
@@ -48,13 +50,22 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                                     />
                                     <span className="font-semibold text-[#e8d8b0]">{entry.name}</span>
                                 </div>
-                                <button
-                                    onClick={() => onRemoveItem(entry.name)}
-                                    className="text-[#ff6b6b] hover:text-[#ff8f8f] text-sm bg-[#3a1800] hover:bg-[#5a2800] px-2 py-1 rounded transition"
-                                    title={`Eliminar ${activeTab.slice(0, -1)}`}
-                                >
-                                    Eliminar
-                                </button>
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={() => onEditItem(entry.name)}
+                                        className="text-[#c4a97a] hover:text-[#e8d5b5] text-sm bg-[#3a1800] hover:bg-[#5a2800] px-2 py-1 rounded transition"
+                                        title={`Editar ${activeTab.slice(0, -1)}`}
+                                    >
+                                        Editar
+                                    </button>
+                                    <button
+                                        onClick={() => onRemoveItem(entry.name)}
+                                        className="text-[#ff6b6b] hover:text-[#ff8f8f] text-sm bg-[#3a1800] hover:bg-[#5a2800] px-2 py-1 rounded transition"
+                                        title={`Eliminar ${activeTab.slice(0, -1)}`}
+                                    >
+                                        Eliminar
+                                    </button>
+                                </div>
                             </div>
 
                             {entry.subItems.length > 0 && (

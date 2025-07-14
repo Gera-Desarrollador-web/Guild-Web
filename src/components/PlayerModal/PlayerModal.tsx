@@ -49,6 +49,7 @@ const PlayerModal: React.FC<Props> = ({
     const inputRef = useRef<HTMLInputElement>(null);
     const [selectedTimeZone, setSelectedTimeZone] = useState(timeZones[0]);
     const modalRef = useRef<HTMLDivElement>(null);
+    const [editingItem, setEditingItem] = useState<{ name: string, originalName: string } | null>(null);
 
     useEffect(() => {
         if (!selectedPlayer) return;
@@ -420,6 +421,72 @@ const PlayerModal: React.FC<Props> = ({
         return checkedItems[selectedPlayer.name]?.[activeTab] || {};
     };
 
+    // Función para iniciar la edición de un item
+    const startEditing = (itemName: string) => {
+        setEditingItem({ name: itemName, originalName: itemName });
+        setNewItem(itemName);
+    };
+
+    // Función para cancelar la edición
+    const cancelEditing = () => {
+        setEditingItem(null);
+        setNewItem("");
+    };
+
+    // Función para guardar los cambios
+    const saveEditedItem = () => {
+        if (!editingItem || !newItem.trim()) return;
+
+        const trimmedName = newItem.trim();
+
+        // Verificar si el nombre ya existe (excepto para el item que estamos editando)
+        if ((currentList as any[]).some(item => {
+            const currentName = activeTab === "bosses" || activeTab === "quests" ? item.name : item;
+            return currentName.toLowerCase() === trimmedName.toLowerCase() &&
+                currentName !== editingItem.originalName;
+        })) {
+            alert(`Este ${activeTab} ya existe.`);
+            return;
+        }
+
+        // Actualizar los miembros
+        const updatedMembers = allMembers.map(member => {
+            if (!member.data) return member;
+
+            if (activeTab === "bosses" || activeTab === "quests") {
+                const updatedList = (member.data[activeTab] || []).map((item: any) =>
+                    item.name === editingItem.originalName ? { ...item, name: trimmedName } : item
+                );
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        [activeTab]: updatedList
+                    }
+                };
+            } else {
+                if (member.name !== selectedPlayer?.name) return member;
+
+                const updatedList = (member.data[activeTab] || []).map((item: string) =>
+                    item === editingItem.originalName ? trimmedName : item
+                );
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        [activeTab]: updatedList
+                    }
+                };
+            }
+        });
+
+        setAllMembers(updatedMembers);
+        refreshSelectedPlayer(updatedMembers);
+        setEditingItem(null);
+        setNewItem("");
+    };
+
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
             <div
@@ -489,7 +556,7 @@ const PlayerModal: React.FC<Props> = ({
                                 onRemoveItem={removeItem}
                                 onRemoveSubItem={removeSubItem}
                                 onAddSubItem={addSubItemToEntry}
-                            />
+                                onEditItem={startEditing} />
                         ) : (
                             <SimpleItemList
                                 items={currentList as string[]}
@@ -499,6 +566,7 @@ const PlayerModal: React.FC<Props> = ({
                                     if (player) setSelectedPlayer(player);
                                 }}
                                 onRemoveItem={removeItem}
+                                onEditItem={startEditing}
                             />
                         )}
                     </div>
@@ -510,8 +578,11 @@ const PlayerModal: React.FC<Props> = ({
                         onNewItemChange={setNewItem}
                         onShowSuggestionsChange={setShowSuggestions}
                         onAddItem={addItem}
+                        onEditItem={saveEditedItem}
+                        onCancelEdit={cancelEditing}
                         inputPosition={inputPosition}
                         onSuggestionClick={onSuggestionClick}
+                        isEditing={!!editingItem}
                     />
                 </div>
             </div>

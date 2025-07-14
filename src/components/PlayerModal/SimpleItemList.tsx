@@ -5,6 +5,8 @@ type SimpleItemListProps = {
     allMembers: { name: string }[];
     onItemClick?: (item: string) => void;
     onRemoveItem: (item: string) => void;
+    onEditItem?: (item: string) => void; // Hacerlo opcional
+    activeTab?: string; // Nueva prop para identificar la pestaña activa
 };
 
 export const SimpleItemList: React.FC<SimpleItemListProps> = ({
@@ -12,7 +14,12 @@ export const SimpleItemList: React.FC<SimpleItemListProps> = ({
     allMembers,
     onItemClick,
     onRemoveItem,
+    onEditItem,
+    activeTab, // Recibir la pestaña activa
 }) => {
+    // Determinar si mostrar el botón de edición
+    const showEditButton = activeTab && ['bosses', 'quests'].includes(activeTab);
+
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-hidden">
             <div className="max-h-64 overflow-y-auto custom-scrollbar">
@@ -41,13 +48,24 @@ export const SimpleItemList: React.FC<SimpleItemListProps> = ({
                                             </span>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={() => onRemoveItem(item)}
-                                        className="text-sm bg-[#5a2800] hover:bg-[#7a3a00] text-[#ff9999] hover:text-white px-3 py-1 rounded border border-[#3a1800] transition-colors"
-                                        title="Eliminar"
-                                    >
-                                        Eliminar
-                                    </button>
+                                    <div className="flex space-x-2">
+                                        {showEditButton && onEditItem && (
+                                            <button
+                                                onClick={() => onEditItem(item)}
+                                                className="text-sm bg-[#5a2800] hover:bg-[#7a3a00] text-[#c4a97a] hover:text-[#e8d8b0] px-3 py-1 rounded border border-[#3a1800] transition-colors"
+                                                title="Editar"
+                                            >
+                                                Editar
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => onRemoveItem(item)}
+                                            className="text-sm bg-[#5a2800] hover:bg-[#7a3a00] text-[#ff9999] hover:text-white px-3 py-1 rounded border border-[#3a1800] transition-colors"
+                                            title="Eliminar"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    </div>
                                 </li>
                             );
                         })}
