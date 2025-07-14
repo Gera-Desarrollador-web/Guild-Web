@@ -12,7 +12,16 @@ type BossQuestListProps = {
     onRemoveItem: (itemName: string) => void;
     onRemoveSubItem: (itemName: string, subItem: string) => void;
     onAddSubItem: (entryName: string, subItem: string) => void;
-    onEditItem: (itemName: string) => void; // Nueva prop para edición
+    onEditItem: (itemName: string) => void;
+    onEditSubItem: (parentItem: string, subItem: string) => void;
+    editingSubItem: {
+        parentItem: string;
+        subItem: string;
+        originalSubItem: string;
+    } | null;
+    onSubItemChange: (value: string) => void;
+    onSaveSubItemEdit: () => void;
+    onCancelSubItemEdit: () => void;
 };
 
 export const BossQuestList: React.FC<BossQuestListProps> = ({
@@ -24,7 +33,12 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
     onRemoveItem,
     onRemoveSubItem,
     onAddSubItem,
-    onEditItem // Nueva prop
+    onEditItem,
+    onEditSubItem,
+    editingSubItem,
+    onSubItemChange,
+    onSaveSubItemEdit,
+    onCancelSubItemEdit,
 }) => {
     const getHeaderText = () => {
         return activeTab === "bosses" ? "Lista de Bosses" : "Lista de Quests";
@@ -79,7 +93,41 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                                                     onChange={(e) => onSubItemCheck(entry.name, sub, e.target.checked)}
                                                     className="w-4 h-4 text-[#c4a97a] bg-[#1a1008] border-[#5a2800] rounded focus:ring-[#c4a97a]"
                                                 />
-                                                <span className="text-[#c4a97a]">{sub}</span>
+                                                {editingSubItem?.parentItem === entry.name && editingSubItem?.originalSubItem === sub ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={editingSubItem.subItem}
+                                                            onChange={(e) => onSubItemChange(e.target.value)}
+                                                            className="bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] px-2 py-1 rounded"
+                                                        />
+                                                        <button
+                                                            onClick={onSaveSubItemEdit}
+                                                            className="text-green-400 hover:text-green-300 text-sm"
+                                                            title="Guardar"
+                                                        >
+                                                            ✓
+                                                        </button>
+                                                        <button
+                                                            onClick={onCancelSubItemEdit}
+                                                            className="text-red-400 hover:text-red-300 text-sm"
+                                                            title="Cancelar"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-[#c4a97a]">{sub}</span>
+                                                        <button
+                                                            onClick={() => onEditSubItem(entry.name, sub)}
+                                                            className="text-[#c4a97a] hover:text-[#e8d5b5] text-sm ml-2"
+                                                            title="Editar subitem"
+                                                        >
+                                                            ✏️
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => onRemoveSubItem(entry.name, sub)}

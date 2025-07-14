@@ -5,8 +5,8 @@ type SimpleItemListProps = {
     allMembers: { name: string }[];
     onItemClick?: (item: string) => void;
     onRemoveItem: (item: string) => void;
-    onEditItem?: (item: string) => void; // Hacerlo opcional
-    activeTab?: string; // Nueva prop para identificar la pestaña activa
+    onEditItem?: (item: string) => void;
+    activeTab?: string;
 };
 
 export const SimpleItemList: React.FC<SimpleItemListProps> = ({
@@ -15,10 +15,9 @@ export const SimpleItemList: React.FC<SimpleItemListProps> = ({
     onItemClick,
     onRemoveItem,
     onEditItem,
-    activeTab, // Recibir la pestaña activa
+    activeTab,
 }) => {
-    // Determinar si mostrar el botón de edición
-    const showEditButton = activeTab && ['bosses', 'quests'].includes(activeTab);
+    const showEditButton = activeTab && ['bosses', 'quests', 'chares', 'notas'].includes(activeTab);
 
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-hidden">
