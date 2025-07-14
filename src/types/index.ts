@@ -22,7 +22,7 @@ export type GuildMember = {
   status: string;
   imageUrl?: string;
   deaths?: DeathEntry[];
-  data?: {
+  data: {  // Quitamos el ? para hacerlo obligatorio
     bosses: BossEntry[];
     quests: BossEntry[];
     chares: string[];
@@ -31,6 +31,7 @@ export type GuildMember = {
   levelHistory?: LevelHistoryEntry[];
   timeZone?: string;
 };
+
 
 export type CheckedItems = {
   [playerName: string]: {
