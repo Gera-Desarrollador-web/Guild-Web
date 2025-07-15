@@ -16,7 +16,8 @@ import {
     verticalListSortingStrategy,
     sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-
+import { SortableItem } from "./SortableItem";
+import { SortableSubItem } from "./SortableSubItem";
 
 type BossQuestListProps = {
     items: BossEntry[];
