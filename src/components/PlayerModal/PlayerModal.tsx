@@ -6,7 +6,7 @@ import { TabNavigation } from "./TabNavigation";
 import { BossQuestList } from "./BossQuestList";
 import { SimpleItemList } from "./SimpleItemList";
 import { AddItemForm } from "./AddItemForm";
-import { arrayMove } from "@dnd-kit/sortable";
+
 
 type CheckedItems = {
     [playerName: string]: {
