@@ -6,6 +6,7 @@ import { TabNavigation } from "./TabNavigation";
 import { BossQuestList } from "./BossQuestList";
 import { SimpleItemList } from "./SimpleItemList";
 import { AddItemForm } from "./AddItemForm";
+import { arrayMove } from "@dnd-kit/sortable";
 
 type CheckedItems = {
     [playerName: string]: {
@@ -45,7 +46,7 @@ const PlayerModal: React.FC<Props> = ({
     const [activeTab, setActiveTab] = useState<"bosses" | "quests" | "chares" | "notas">("bosses");
     const [newItem, setNewItem] = useState("");
     const [, setShowSuggestions] = useState(false);
-    const [inputPosition, ] = useState<{ top: number; left: number; width: number } | null>(null);
+    const [inputPosition,] = useState<{ top: number; left: number; width: number } | null>(null);
     const [selectedTimeZone, setSelectedTimeZone] = useState(timeZones[0]);
     const modalRef = useRef<HTMLDivElement>(null);
     const [editingItem, setEditingItem] = useState<{
@@ -605,6 +606,47 @@ const PlayerModal: React.FC<Props> = ({
         return checkedItems[selectedPlayer.name]?.[activeTab] || {};
     };
 
+    const handleReorderItems = (newItems: BossEntry[]) => {
+        const updatedMembers = allMembers.map(member => {
+            if (!member.data) return member;
+            return {
+                ...member,
+                data: {
+                    ...member.data,
+                    [activeTab]: newItems
+                }
+            };
+        });
+
+        setAllMembers(updatedMembers);
+        refreshSelectedPlayer(updatedMembers);
+    };
+
+    const handleReorderSubItems = (parentName: string, newSubItems: string[]) => {
+        const updatedMembers = allMembers.map(member => {
+            if (!member.data) return member;
+
+            if (activeTab === "bosses" || activeTab === "quests") {
+                const updatedEntries = (member.data[activeTab] || []).map(entry =>
+                    entry.name === parentName
+                        ? { ...entry, subItems: newSubItems }
+                        : entry
+                );
+
+                return {
+                    ...member,
+                    data: {
+                        ...member.data,
+                        [activeTab]: updatedEntries
+                    }
+                };
+            }
+            return member;
+        });
+
+        setAllMembers(updatedMembers);
+        refreshSelectedPlayer(updatedMembers);
+    };
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
             <div
@@ -681,6 +723,8 @@ const PlayerModal: React.FC<Props> = ({
                                 onSubItemChange={handleSubItemChange}
                                 onSaveSubItemEdit={saveEditedSubItem}
                                 onCancelSubItemEdit={cancelEditingSubItem}
+                                onReorderItems={handleReorderItems}
+                                onReorderSubItems={handleReorderSubItems}
                             />
                         ) : (
                             <SimpleItemList
