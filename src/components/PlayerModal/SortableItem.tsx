@@ -40,6 +40,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({
     transform: CSS.Transform.toString(transform),
     transition,
   };
+  
 
   return (
     <li 

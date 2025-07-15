@@ -9,6 +9,8 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
 } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -18,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableItem } from "./SortableItem";
 import { SortableSubItem } from "./SortableSubItem";
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
 
 type BossQuestListProps = {
     items: BossEntry[];
@@ -62,9 +65,14 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
     onReorderSubItems,
 }) => {
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -77,8 +85,13 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
         }));
     };
 
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveDragId(event.active.id.toString());
+    };
+
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
+        setActiveDragId(null);
 
         if (!over || active.id === over.id) return;
 
@@ -86,7 +99,10 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
         if (active.id.toString().startsWith("item-")) {
             const oldIndex = items.findIndex(item => `item-${item.name}` === active.id);
             const newIndex = items.findIndex(item => `item-${item.name}` === over.id);
-            onReorderItems(arrayMove(items, oldIndex, newIndex));
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                onReorderItems(arrayMove(items, oldIndex, newIndex));
+            }
         }
         // Handle sub-items drag
         else if (active.id.toString().includes("::")) {
@@ -97,12 +113,60 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
             const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
             const newIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === over.id);
 
-            onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, newIndex));
+            if (oldIndex !== -1 && newIndex !== -1) {
+                onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, newIndex));
+            }
         }
     };
 
     const getHeaderText = () => {
         return activeTab === "bosses" ? "Lista de Bosses" : "Lista de Quests";
+    };
+
+    const getActiveItem = () => {
+        if (!activeDragId) return null;
+        
+        if (activeDragId.startsWith("item-")) {
+            const itemName = activeDragId.replace("item-", "");
+            const item = items.find(i => i.name === itemName);
+            if (!item) return null;
+            
+            return (
+                <SortableItem
+                    id={activeDragId}
+                    entry={item}
+                    activeTab={activeTab}
+                    checked={checkedItems[item.name] || false}
+                    onItemCheck={onItemCheck}
+                    onRemoveItem={onRemoveItem}
+                    onEditItem={onEditItem}
+                    isExpanded={false}
+                    toggleExpand={toggleExpand}
+                />
+            );
+        } else if (activeDragId.includes("::")) {
+            const [parentName, subItem] = activeDragId.split("::");
+            const parent = items.find(i => i.name === parentName);
+            if (!parent) return null;
+            
+            return (
+                <SortableSubItem
+                    id={activeDragId}
+                    entryName={parentName}
+                    subItem={subItem}
+                    checked={checkedItems[activeDragId] || false}
+                    onSubItemCheck={onSubItemCheck}
+                    onRemoveSubItem={onRemoveSubItem}
+                    onEditSubItem={onEditSubItem}
+                    editingSubItem={null}
+                    onSubItemChange={onSubItemChange}
+                    onSaveSubItemEdit={onSaveSubItemEdit}
+                    onCancelSubItemEdit={onCancelSubItemEdit}
+                />
+            );
+        }
+        
+        return null;
     };
 
     return (
@@ -111,17 +175,19 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                 <h3 className="text-[#e8d8b0] font-bold text-center">{getHeaderText()}</h3>
             </div>
 
-            <div className="p-3">
+            <div className="p-3 relative">
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
+                    modifiers={[restrictToVerticalAxis, restrictToParentElement]}
                 >
                     <SortableContext
                         items={items.map(item => `item-${item.name}`)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <ul className="max-h-64 overflow-y-auto custom-scrollbar">
+                        <ul className="relative max-h-96 overflow-y-auto custom-scrollbar">
                             {items.map((entry) => (
                                 <SortableItem
                                     key={`item-${entry.name}`}
@@ -170,6 +236,10 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                             ))}
                         </ul>
                     </SortableContext>
+                    
+                    <DragOverlay>
+                        {activeDragId && getActiveItem()}
+                    </DragOverlay>
                 </DndContext>
             </div>
         </div>
