@@ -3,7 +3,7 @@ import { BossEntry } from "../../types";
 import { AddSubItemInput } from "./AddSubItemInput";
 import {
     DndContext,
-    closestCenter,
+    
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -11,6 +11,8 @@ import {
     DragEndEvent,
     DragOverlay,
     DragStartEvent,
+    pointerWithin,
+    
 } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -20,7 +22,7 @@ import {
 } from "@dnd-kit/sortable";
 import { SortableItem } from "./SortableItem";
 import { SortableSubItem } from "./SortableSubItem";
-import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 type BossQuestListProps = {
     items: BossEntry[];
@@ -70,7 +72,7 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8,
+                distance: 5, // Reducido para mayor sensibilidad
             },
         }),
         useSensor(KeyboardSensor, {
@@ -89,71 +91,82 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
         setActiveDragId(event.active.id.toString());
     };
 
-    // BossQuestList.tsx
-const handleDragEnd = (event: DragEndEvent) => {
-  const { active, over } = event;
-  setActiveDragId(null);
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveDragId(null);
 
-  if (!over || active.id === over.id) return;
+        if (!over || active.id === over.id) return;
 
-  // Handle main items drag
-  if (active.id.toString().startsWith("item-")) {
-    const oldIndex = items.findIndex(item => `item-${item.name}` === active.id);
-    const newIndex = items.findIndex(item => `item-${item.name}` === over.id);
+        // Handle main items drag
+        if (active.id.toString().startsWith("item-")) {
+            const oldIndex = items.findIndex(item => `item-${item.name}` === active.id);
+            const newIndex = items.findIndex(item => `item-${item.name}` === over.id);
 
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const newItems = arrayMove(items, oldIndex, newIndex);
-      onReorderItems(newItems);
-    }
-  }
-  // Handle sub-items drag
-  else if (active.id.toString().includes("::")) {
-    const [parentName] = active.id.toString().split("::");
-    const parentItem = items.find(item => item.name === parentName);
-    if (!parentItem) return;
+            if (oldIndex !== -1 && newIndex !== -1) {
+                const newItems = arrayMove(items, oldIndex, newIndex);
+                onReorderItems(newItems);
+            }
+        }
+        // Handle sub-items drag
+        else if (active.id.toString().includes("::")) {
+            const [parentName] = active.id.toString().split("::");
+            const parentItem = items.find(item => item.name === parentName);
+            if (!parentItem) return;
 
-    const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
-    const newIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === over.id);
+            // Caso especial: arrastrar sobre un ítem padre
+            if (over.id.toString().startsWith("item-")) {
+                const targetParentName = over.id.toString().replace("item-", "");
+                if (targetParentName !== parentName) {
+                    // Aquí puedes manejar el mover sub-ítems entre padres si es necesario
+                    return;
+                }
+                // Si es el mismo padre, mover al final de la lista
+                const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
+                if (oldIndex !== -1) {
+                    onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, parentItem.subItems.length - 1));
+                }
+                return;
+            }
 
-    if (oldIndex !== -1 && newIndex !== -1) {
-      onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, newIndex));
-    }
-  }
-};
+            const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
+            const newIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === over.id);
+
+            if (oldIndex !== -1 && newIndex !== -1) {
+                onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, newIndex));
+            }
+        }
+    };
 
     const getHeaderText = () => {
         return activeTab === "bosses" ? "Lista de Bosses" : "Lista de Quests";
     };
 
-   const getActiveItem = () => {
-    if (!activeDragId) return null;
+    const getActiveItem = () => {
+        if (!activeDragId) return null;
 
-    // Ítem principal (boss/quest)
-    if (activeDragId.startsWith("item-")) {
-        const itemName = activeDragId.replace("item-", "");
-        const item = items.find(i => i.name === itemName);
-        if (!item) return null;
+        if (activeDragId.startsWith("item-")) {
+            const itemName = activeDragId.replace("item-", "");
+            const item = items.find(i => i.name === itemName);
+            if (!item) return null;
 
-        return (
-            <div className="flex items-center justify-between p-2 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] shadow-lg">
-                <span className="font-semibold">{item.name}</span>
-            </div>
-        );
-    }
+            return (
+                <div className="flex items-center justify-between p-2 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] shadow-lg">
+                    <span className="font-semibold">{item.name}</span>
+                </div>
+            );
+        }
 
-    // Sub-ítem
-    if (activeDragId.includes("::")) {
-        const [, subItem] = activeDragId.split("::");
-        return (
-            <div className="ml-4 px-2 py-1 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] shadow">
-                {subItem}
-            </div>
-        );
-    }
+        if (activeDragId.includes("::")) {
+            const [, subItem] = activeDragId.split("::");
+            return (
+                <div className="ml-4 px-2 py-1 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] shadow">
+                    {subItem}
+                </div>
+            );
+        }
 
-    return null;
-};
-
+        return null;
+    };
 
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-hidden">
@@ -164,16 +177,16 @@ const handleDragEnd = (event: DragEndEvent) => {
             <div className="p-3 relative">
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCenter}
+                    collisionDetection={pointerWithin} // Cambiado a pointerWithin para mejor detección
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
-                 modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                    modifiers={[restrictToVerticalAxis]}
                 >
                     <SortableContext
                         items={items.map(item => `item-${item.name}`)}
                         strategy={verticalListSortingStrategy}
                     >
-                        <ul className="relative max-h-96 overflow-y-auto custom-scrollbar">
+                        <ul className="relative max-h-96 overflow-y-auto custom-scrollbar space-y-1">
                             {items.map((entry) => (
                                 <SortableItem
                                     key={`item-${entry.name}`}
@@ -192,7 +205,7 @@ const handleDragEnd = (event: DragEndEvent) => {
                                             items={entry.subItems.map(sub => `${entry.name}::${sub}`)}
                                             strategy={verticalListSortingStrategy}
                                         >
-                                            <ul className="ml-4 sm:ml-6 mb-2 mt-1 space-y-1">
+                                            <ul className="ml-4 sm:ml-6 mb-2 mt-1 space-y-2"> {/* Aumentado space-y */}
                                                 {entry.subItems.map((sub) => (
                                                     <SortableSubItem
                                                         key={`${entry.name}::${sub}`}
