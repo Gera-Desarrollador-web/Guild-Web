@@ -39,15 +39,17 @@ export const SortableSubItem: React.FC<SortableSubItemProps> = ({
     setNodeRef,
     transform,
     transition,
+    isDragging, // Añade esto
   } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0 : 1, // Esto hace que el elemento original sea invisible mientras se arrastra
   };
 
   return (
-    <li 
+    <li
       ref={setNodeRef}
       style={style}
       className="flex flex-col sm:flex-row sm:justify-between sm:items-center"

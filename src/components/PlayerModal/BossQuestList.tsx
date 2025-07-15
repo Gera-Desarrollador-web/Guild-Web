@@ -89,85 +89,71 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
         setActiveDragId(event.active.id.toString());
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event;
-        setActiveDragId(null);
+    // BossQuestList.tsx
+const handleDragEnd = (event: DragEndEvent) => {
+  const { active, over } = event;
+  setActiveDragId(null);
 
-        if (!over || active.id === over.id) return;
+  if (!over || active.id === over.id) return;
 
-        // Handle main items drag
-        if (active.id.toString().startsWith("item-")) {
-            const oldIndex = items.findIndex(item => `item-${item.name}` === active.id);
-            const newIndex = items.findIndex(item => `item-${item.name}` === over.id);
+  // Handle main items drag
+  if (active.id.toString().startsWith("item-")) {
+    const oldIndex = items.findIndex(item => `item-${item.name}` === active.id);
+    const newIndex = items.findIndex(item => `item-${item.name}` === over.id);
 
-            if (oldIndex !== -1 && newIndex !== -1) {
-                onReorderItems(arrayMove(items, oldIndex, newIndex));
-            }
-        }
-        // Handle sub-items drag
-        else if (active.id.toString().includes("::")) {
-            const [parentName] = active.id.toString().split("::");
-            const parentItem = items.find(item => item.name === parentName);
-            if (!parentItem) return;
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      onReorderItems(newItems);
+    }
+  }
+  // Handle sub-items drag
+  else if (active.id.toString().includes("::")) {
+    const [parentName] = active.id.toString().split("::");
+    const parentItem = items.find(item => item.name === parentName);
+    if (!parentItem) return;
 
-            const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
-            const newIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === over.id);
+    const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
+    const newIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === over.id);
 
-            if (oldIndex !== -1 && newIndex !== -1) {
-                onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, newIndex));
-            }
-        }
-    };
+    if (oldIndex !== -1 && newIndex !== -1) {
+      onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, newIndex));
+    }
+  }
+};
 
     const getHeaderText = () => {
         return activeTab === "bosses" ? "Lista de Bosses" : "Lista de Quests";
     };
 
-    const getActiveItem = () => {
-        if (!activeDragId) return null;
-        
-        if (activeDragId.startsWith("item-")) {
-            const itemName = activeDragId.replace("item-", "");
-            const item = items.find(i => i.name === itemName);
-            if (!item) return null;
-            
-            return (
-                <SortableItem
-                    id={activeDragId}
-                    entry={item}
-                    activeTab={activeTab}
-                    checked={checkedItems[item.name] || false}
-                    onItemCheck={onItemCheck}
-                    onRemoveItem={onRemoveItem}
-                    onEditItem={onEditItem}
-                    isExpanded={false}
-                    toggleExpand={toggleExpand}
-                />
-            );
-        } else if (activeDragId.includes("::")) {
-            const [parentName, subItem] = activeDragId.split("::");
-            const parent = items.find(i => i.name === parentName);
-            if (!parent) return null;
-            
-            return (
-                <SortableSubItem
-                    id={activeDragId}
-                    entryName={parentName}
-                    subItem={subItem}
-                    checked={checkedItems[activeDragId] || false}
-                    onSubItemCheck={onSubItemCheck}
-                    onRemoveSubItem={onRemoveSubItem}
-                    onEditSubItem={onEditSubItem}
-                    editingSubItem={null}
-                    onSubItemChange={onSubItemChange}
-                    onSaveSubItemEdit={onSaveSubItemEdit}
-                    onCancelSubItemEdit={onCancelSubItemEdit}
-                />
-            );
-        }
-        
-        return null;
-    };
+   const getActiveItem = () => {
+    if (!activeDragId) return null;
+
+    // Ítem principal (boss/quest)
+    if (activeDragId.startsWith("item-")) {
+        const itemName = activeDragId.replace("item-", "");
+        const item = items.find(i => i.name === itemName);
+        if (!item) return null;
+
+        return (
+            <div className="flex items-center justify-between p-2 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] shadow-lg">
+                <span className="font-semibold">{item.name}</span>
+            </div>
+        );
+    }
+
+    // Sub-ítem
+    if (activeDragId.includes("::")) {
+        const [, subItem] = activeDragId.split("::");
+        return (
+            <div className="ml-4 px-2 py-1 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] shadow">
+                {subItem}
+            </div>
+        );
+    }
+
+    return null;
+};
+
 
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-hidden">
@@ -181,7 +167,7 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                     collisionDetection={closestCenter}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
-                    modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                 modifiers={[restrictToVerticalAxis, restrictToParentElement]}
                 >
                     <SortableContext
                         items={items.map(item => `item-${item.name}`)}
@@ -236,9 +222,12 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                             ))}
                         </ul>
                     </SortableContext>
-                    
-                    <DragOverlay>
-                        {activeDragId && getActiveItem()}
+                    <DragOverlay adjustScale={false} dropAnimation={null}>
+                        {activeDragId && (
+                            <div className="bg-[#2d1a0f] border border-[#5a2800] rounded shadow-lg">
+                                {getActiveItem()}
+                            </div>
+                        )}
                     </DragOverlay>
                 </DndContext>
             </div>

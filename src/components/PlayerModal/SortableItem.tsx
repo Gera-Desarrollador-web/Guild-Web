@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { BossEntry } from "../../types";
 
+
 type SortableItemProps = {
   id: string;
   entry: BossEntry;
@@ -34,26 +35,27 @@ export const SortableItem: React.FC<SortableItemProps> = ({
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1, // Cambiado a 0.5 para que sea semi-transparente
+    zIndex: isDragging ? 1 : 'auto', // Asegura que el elemento arrastrado esté sobre los demás
   };
-  
-
   return (
-    <li 
+    <li
       ref={setNodeRef}
       style={style}
-      className="mb-3 last:mb-0 border-b border-[#3a1800] pb-2 last:border-0"
+      className={`mb-3 last:mb-0 border-b border-[#3a1800] pb-2 last:border-0 ${isDragging ? 'shadow-lg' : ''}`} 
     >
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-1">
         <div className="flex items-center space-x-2 mb-1 sm:mb-0">
           <button
             {...attributes}
             {...listeners}
-            className="cursor-move focus:outline-none"
+            className="cursor-move focus:outline-none bg-transparent border-none"
           >
             <span className="text-[#c4a97a]">☰</span>
           </button>
@@ -63,7 +65,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({
             onChange={(e) => onItemCheck(entry.name, e.target.checked)}
             className="w-4 h-4 text-[#c4a97a] bg-[#1a1008] border-[#5a2800] rounded focus:ring-[#c4a97a]"
           />
-          <button 
+          <button
             onClick={() => toggleExpand(entry.name)}
             className="font-semibold text-[#e8d8b0] hover:underline"
           >
