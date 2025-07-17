@@ -33,6 +33,30 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
         vocationGifs[selectedPlayer.vocation]?.[selectedPlayer.sex.toLowerCase()] ||
         "https://media.giphy.com/media/ya4eevXU490Iw/giphy.gif";
 
+    const getLevelProgressText = () => {
+        if (levelDiff === null) return null;
+
+        let text = "";
+        let colorClass = "";
+
+        if (levelDiff > 0) {
+            text = `+${levelDiff} en 7 días`;
+            colorClass = "text-[#8bc34a]"; // Verde
+        } else if (levelDiff < 0) {
+            text = `${levelDiff} en 7 días`;
+            colorClass = "text-[#ff6b6b]"; // Rojo
+        } else {
+            text = `0 en 7 días`;
+            colorClass = "text-[#aaaaaa]"; // Gris
+        }
+
+        return (
+            <span className={`ml-2 ${colorClass} font-semibold`}>
+                {text}
+            </span>
+        );
+    };
+
     return (
         <div className="flex flex-col sm:flex-row justify-between items-start mb-6 p-3 bg-[#2d1a0f] rounded-lg border-2 border-[#5d3b1e]">
             <div className="flex flex-col sm:flex-row w-full gap-3">
@@ -45,16 +69,14 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                 </div>
                 <div className="flex-1">
                     <div className="ml-8 grid grid-cols-1 md:grid-cols-2 gap-1 text-[#e8d5b5]">
-                           <p>
+                        <p>
                             <span className="font-bold">Nombre: </span>
                             {selectedPlayer.name}
                         </p>
                         <p>
                             <span className="font-bold">Lvl: </span>
                             {selectedPlayer.level}
-                            {levelDiff !== null && levelDiff > 0 && (
-                                <span className="ml-1 text-[#8bc34a] font-semibold">+{levelDiff} en 7 días</span>
-                            )}
+                            {getLevelProgressText()}
                         </p>
 
                         <p>
@@ -63,9 +85,13 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                         </p>
                         <p>
                             <span className="font-bold">Estado: </span>
-                            <span className={selectedPlayer.status.toLowerCase() === "online"
-                                ? "text-[#8bc34a]"
-                                : "text-[#aaaaaa]"}>
+                            <span
+                                className={
+                                    selectedPlayer.status.toLowerCase() === "online"
+                                        ? "text-[#8bc34a]"
+                                        : "text-[#aaaaaa]"
+                                }
+                            >
                                 {selectedPlayer.status}
                             </span>
                         </p>
@@ -79,7 +105,6 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                                 hour12: false,
                             })}
                         </p>
-                        
                     </div>
 
                     <select
@@ -88,14 +113,16 @@ export const PlayerInfo: React.FC<PlayerInfoProps> = ({
                         onChange={(e) => onTimeZoneChange(e.target.value)}
                     >
                         {timeZones.map((zone) => (
-                            <option key={zone.code} value={zone.code} className="bg-[#2d1a0f]">
+                            <option
+                                key={zone.code}
+                                value={zone.code}
+                                className="bg-[#2d1a0f]"
+                            >
                                 {zone.label}
                             </option>
                         ))}
                     </select>
                 </div>
-
-
             </div>
         </div>
     );

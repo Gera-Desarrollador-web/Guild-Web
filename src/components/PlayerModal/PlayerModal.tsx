@@ -42,6 +42,7 @@ const PlayerModal: React.FC<Props> = ({
     setAllMembers,
     checkedItems,
     setCheckedItems,
+
 }) => {
     const [activeTab, setActiveTab] = useState<"bosses" | "quests" | "chares" | "notas">("bosses");
     const [newItem, setNewItem] = useState("");
@@ -60,6 +61,31 @@ const PlayerModal: React.FC<Props> = ({
         originalSubItem: string;
     } | null>(null);
 
+
+    useEffect(() => {
+        if (!selectedPlayer) return;
+
+        setAllMembers(prev => prev.map(member => {
+            if (member.name === selectedPlayer.name) {
+                const currentHistory = member.levelHistory || [];
+                const lastEntry = currentHistory[currentHistory.length - 1];
+
+                if (!lastEntry || lastEntry.level !== selectedPlayer.level) {
+                    return {
+                        ...member,
+                        levelHistory: [
+                            ...currentHistory.slice(-99), // Mantener solo los últimos 100 registros
+                            {
+                                date: new Date().toISOString(),
+                                level: selectedPlayer.level
+                            }
+                        ]
+                    };
+                }
+            }
+            return member;
+        }));
+    }, [selectedPlayer?.level, setAllMembers]);
     useEffect(() => {
         if (!selectedPlayer) return;
         const found = timeZones.find((z) => z.timeZone === selectedPlayer.timeZone);
@@ -82,19 +108,28 @@ const PlayerModal: React.FC<Props> = ({
 
     if (!selectedPlayer) return null;
 
-    const getLevelOneWeekAgo = (history: { date: string; level: number }[]): number | null => {
+    const getLevelOneWeekAgo = (history: LevelHistoryEntry[] = []): number | null => {
+        if (history.length === 0) return null;
+
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        const sorted = history
-            .filter((entry) => new Date(entry.date) <= oneWeekAgo)
+        const validEntries = history
+            .filter(entry => entry && entry.date && !isNaN(new Date(entry.date).getTime()))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        return sorted.length > 0 ? sorted[0].level : null;
+        const lastEntryBeforeWeek = validEntries.find(entry =>
+            new Date(entry.date) <= oneWeekAgo
+        );
+
+        return lastEntryBeforeWeek?.level ?? validEntries[validEntries.length - 1]?.level ?? null;
     };
 
-    const levelOneWeekAgo = selectedPlayer.levelHistory ? getLevelOneWeekAgo(selectedPlayer.levelHistory) : null;
-    const levelDiff = levelOneWeekAgo !== null ? selectedPlayer.level - levelOneWeekAgo : null;
+    // Actualiza el cálculo del levelDiff para manejar casos edge
+    const levelOneWeekAgo = getLevelOneWeekAgo(selectedPlayer?.levelHistory);
+    const levelDiff = levelOneWeekAgo !== null ?
+        (selectedPlayer?.level || 0) - levelOneWeekAgo :
+        null;
 
     const currentList =
         activeTab === "bosses"
@@ -591,15 +626,15 @@ const PlayerModal: React.FC<Props> = ({
         const newZone = timeZones.find((z) => z.code === code);
         if (!newZone || !selectedPlayer) return;
 
-        setSelectedTimeZone(newZone);
-        setAllMembers((prev) => {
-            const updatedMembers = prev.map((member) =>
-                member.name === selectedPlayer.name ? { ...member, timeZone: newZone.timeZone } : member
-            );
-            const updatedPlayer = updatedMembers.find((m) => m.name === selectedPlayer.name) || null;
-            setSelectedPlayer(updatedPlayer);
-            return updatedMembers;
-        });
+        setAllMembers(prev => prev.map(member =>
+            member.name === selectedPlayer.name
+                ? {
+                    ...member,
+                    timeZone: newZone.timeZone,
+                    levelHistory: member.levelHistory || [] // Mantener historial
+                }
+                : member
+        ));
     };
 
     const getCheckedItemsForPlayer = () => {

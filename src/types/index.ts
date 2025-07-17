@@ -9,7 +9,7 @@ export type DeathEntry = {
   reason: string;
 };
 
-export type LevelHistoryEntry = {
+type LevelHistoryEntry = {
   date: string;
   level: number;
 };
@@ -28,8 +28,9 @@ export type GuildMember = {
     chares: string[];
     notas: string[];
   };
-  levelHistory?: LevelHistoryEntry[];
+  levelHistory: LevelHistoryEntry[]; // Añadir esta línea
   timeZone?: string;
+
 };
 
 
