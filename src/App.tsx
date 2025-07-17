@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import GuildManager from "./components/GuildManager";
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import isEqual from "lodash.isequal";
 import { GuildMember, CheckedItems } from "./types";
 import LoginGate from "./components/LoginGate";
 

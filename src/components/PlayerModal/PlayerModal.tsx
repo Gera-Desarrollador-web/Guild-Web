@@ -6,6 +6,7 @@ import { TabNavigation } from "./TabNavigation";
 import { BossQuestList } from "./BossQuestList";
 import { SimpleItemList } from "./SimpleItemList";
 import { AddItemForm } from "./AddItemForm";
+import { LevelHistoryEntry } from "../../types"
 
 
 type CheckedItems = {

@@ -9,11 +9,10 @@ export type DeathEntry = {
   reason: string;
 };
 
-type LevelHistoryEntry = {
+export type LevelHistoryEntry = {  // Añade export aquí
   date: string;
   level: number;
 };
-
 export type GuildMember = {
   name: string;
   level: number;
