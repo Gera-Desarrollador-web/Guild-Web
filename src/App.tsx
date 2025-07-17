@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<GuildMember | null>(null);
   const [checkedItems, setCheckedItems] = useState<CheckedItems>({});
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [originalCheckedItems, setOriginalCheckedItems] = useState<CheckedItems>({});
+  const [, setOriginalCheckedItems] = useState<CheckedItems>({});
   const [skipSaveOnFirstLoad, setSkipSaveOnFirstLoad] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
