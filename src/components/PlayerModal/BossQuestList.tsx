@@ -3,7 +3,6 @@ import { BossEntry } from "../../types";
 import { AddSubItemInput } from "./AddSubItemInput";
 import {
     DndContext,
-    
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -12,7 +11,6 @@ import {
     DragOverlay,
     DragStartEvent,
     pointerWithin,
-    
 } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -68,11 +66,12 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
 }) => {
     const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
     const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [filterText, setFilterText] = useState('');
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, // Reducido para mayor sensibilidad
+                distance: 5,
             },
         }),
         useSensor(KeyboardSensor, {
@@ -97,7 +96,6 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
 
         if (!over || active.id === over.id) return;
 
-        // Handle main items drag
         if (active.id.toString().startsWith("item-")) {
             const oldIndex = items.findIndex(item => `item-${item.name}` === active.id);
             const newIndex = items.findIndex(item => `item-${item.name}` === over.id);
@@ -107,20 +105,16 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
                 onReorderItems(newItems);
             }
         }
-        // Handle sub-items drag
         else if (active.id.toString().includes("::")) {
             const [parentName] = active.id.toString().split("::");
             const parentItem = items.find(item => item.name === parentName);
             if (!parentItem) return;
 
-            // Caso especial: arrastrar sobre un ítem padre
             if (over.id.toString().startsWith("item-")) {
                 const targetParentName = over.id.toString().replace("item-", "");
                 if (targetParentName !== parentName) {
-                    // Aquí puedes manejar el mover sub-ítems entre padres si es necesario
                     return;
                 }
-                // Si es el mismo padre, mover al final de la lista
                 const oldIndex = parentItem.subItems.findIndex(sub => `${parentName}::${sub}` === active.id);
                 if (oldIndex !== -1) {
                     onReorderSubItems(parentName, arrayMove(parentItem.subItems, oldIndex, parentItem.subItems.length - 1));
@@ -168,71 +162,97 @@ export const BossQuestList: React.FC<BossQuestListProps> = ({
         return null;
     };
 
+    const filteredItems = items.filter(item => {
+        if (!filterText.trim()) return true;
+        
+        const itemMatches = item.name.toLowerCase().includes(filterText.toLowerCase());
+        const subItemsMatch = item.subItems.some(subItem => 
+            subItem.toLowerCase().includes(filterText.toLowerCase())
+        );
+        
+        return itemMatches || subItemsMatch;
+    });
+
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5a2800] rounded-lg shadow-lg overflow-hidden">
             <div className="bg-[#5a2800] p-2 border-b border-[#3a1800]">
                 <h3 className="text-[#e8d8b0] font-bold text-center">{getHeaderText()}</h3>
+                <div className="mt-2 px-2">
+                    <input
+                        type="text"
+                        placeholder={`Filtrar ${activeTab === 'bosses' ? 'bosses' : 'quests'}...`}
+                        className="w-full p-1 rounded bg-[#1a1008] border border-[#5a2800] text-[#e8d8b0] placeholder-[#e8d8b080] focus:outline-none focus:ring-1 focus:ring-[#e8d8b0]"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                    />
+                </div>
             </div>
 
             <div className="p-3 relative">
                 <DndContext
                     sensors={sensors}
-                    collisionDetection={pointerWithin} // Cambiado a pointerWithin para mejor detección
+                    collisionDetection={pointerWithin}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
                     modifiers={[restrictToVerticalAxis]}
                 >
                     <SortableContext
-                        items={items.map(item => `item-${item.name}`)}
+                        items={filteredItems.map(item => `item-${item.name}`)}
                         strategy={verticalListSortingStrategy}
                     >
                         <ul className="relative max-h-96 overflow-y-auto custom-scrollbar space-y-1">
-                            {items.map((entry) => (
-                                <SortableItem
-                                    key={`item-${entry.name}`}
-                                    id={`item-${entry.name}`}
-                                    entry={entry}
-                                    activeTab={activeTab}
-                                    checked={checkedItems[entry.name] || false}
-                                    onItemCheck={onItemCheck}
-                                    onRemoveItem={onRemoveItem}
-                                    onEditItem={onEditItem}
-                                    isExpanded={!!expandedItems[entry.name]}
-                                    toggleExpand={toggleExpand}
-                                >
-                                    {expandedItems[entry.name] && entry.subItems.length > 0 && (
-                                        <SortableContext
-                                            items={entry.subItems.map(sub => `${entry.name}::${sub}`)}
-                                            strategy={verticalListSortingStrategy}
-                                        >
-                                            <ul className="ml-4 sm:ml-6 mb-2 mt-1 space-y-2"> {/* Aumentado space-y */}
-                                                {entry.subItems.map((sub) => (
-                                                    <SortableSubItem
-                                                        key={`${entry.name}::${sub}`}
-                                                        id={`${entry.name}::${sub}`}
-                                                        entryName={entry.name}
-                                                        subItem={sub}
-                                                        checked={checkedItems[`${entry.name}::${sub}`] || false}
-                                                        onSubItemCheck={onSubItemCheck}
-                                                        onRemoveSubItem={onRemoveSubItem}
-                                                        onEditSubItem={onEditSubItem}
-                                                        editingSubItem={editingSubItem}
-                                                        onSubItemChange={onSubItemChange}
-                                                        onSaveSubItemEdit={onSaveSubItemEdit}
-                                                        onCancelSubItemEdit={onCancelSubItemEdit}
-                                                    />
-                                                ))}
-                                            </ul>
-                                        </SortableContext>
-                                    )}
+                            {filteredItems.length === 0 ? (
+                                <li className="text-[#e8d8b0] text-center py-4">
+                                    No se encontraron {activeTab === 'bosses' ? 'bosses' : 'quests'} que coincidan con "{filterText}"
+                                </li>
+                            ) : (
+                                filteredItems.map((entry) => (
+                                    <SortableItem
+                                        key={`item-${entry.name}`}
+                                        id={`item-${entry.name}`}
+                                        entry={entry}
+                                        activeTab={activeTab}
+                                        checked={checkedItems[entry.name] || false}
+                                        onItemCheck={onItemCheck}
+                                        onRemoveItem={onRemoveItem}
+                                        onEditItem={onEditItem}
+                                        isExpanded={!!expandedItems[entry.name]}
+                                        toggleExpand={toggleExpand}
+                                    >
+                                        {expandedItems[entry.name] && entry.subItems.length > 0 && (
+                                            <SortableContext
+                                                items={entry.subItems.map(sub => `${entry.name}::${sub}`)}
+                                                strategy={verticalListSortingStrategy}
+                                            >
+                                                <ul className="ml-4 sm:ml-6 mb-2 mt-1 space-y-2">
+                                                    {entry.subItems.map((sub) => (
+                                                        <SortableSubItem
+                                                            key={`${entry.name}::${sub}`}
+                                                            id={`${entry.name}::${sub}`}
+                                                            entryName={entry.name}
+                                                            subItem={sub}
+                                                            checked={checkedItems[`${entry.name}::${sub}`] || false}
+                                                            onSubItemCheck={onSubItemCheck}
+                                                            onRemoveSubItem={onRemoveSubItem}
+                                                            onEditSubItem={onEditSubItem}
+                                                            editingSubItem={editingSubItem}
+                                                            onSubItemChange={onSubItemChange}
+                                                            onSaveSubItemEdit={onSaveSubItemEdit}
+                                                            onCancelSubItemEdit={onCancelSubItemEdit}
+                                                        />
+                                                    ))}
+                                                </ul>
+                                            </SortableContext>
+                                        )}
 
-                                    <AddSubItemInput
-                                        entryName={entry.name}
-                                        onAddSubItem={onAddSubItem}
-                                        className="mt-2"
-                                    />
-                                </SortableItem>
-                            ))}
+                                        <AddSubItemInput
+                                            entryName={entry.name}
+                                            onAddSubItem={onAddSubItem}
+                                            className="mt-2"
+                                        />
+                                    </SortableItem>
+                                ))
+                            )}
                         </ul>
                     </SortableContext>
                     <DragOverlay adjustScale={false} dropAnimation={null}>
