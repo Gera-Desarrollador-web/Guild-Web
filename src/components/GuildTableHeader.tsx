@@ -28,30 +28,30 @@ const GuildTableHeader: React.FC<Props> = ({
     setQuestFilter,
     levelRange,
     setLevelRange,
-
     setMinLevel,
-
     setMaxLevel,
 }) => {
     const handleLevelRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setLevelRange(value);
+        setLevelRange(value); // Guarda el formato visual "100-50"
 
         const match = value.match(/^(\d+)\s*-\s*(\d+)$/);
         if (match) {
-            const [, minStr, maxStr] = match;
-            const min = parseInt(minStr, 10);
-            const max = parseInt(maxStr, 10);
+            const [, firstStr, secondStr] = match;
+            const num1 = parseInt(firstStr, 10);
+            const num2 = parseInt(secondStr, 10);
 
-            if (!isNaN(min)) setMinLevel(min);
-            if (!isNaN(max)) setMaxLevel(max);
+            // Determina min y max sin importar el orden ingresado
+            const realMin = Math.min(num1, num2);
+            const realMax = Math.max(num1, num2);
+
+            if (!isNaN(realMin)) setMinLevel(realMin);
+            if (!isNaN(realMax)) setMaxLevel(realMax);
         } else {
-            // En caso de entrada inválida, usa rango total
             setMinLevel(0);
             setMaxLevel(1000);
         }
     };
-
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5d3b1e] rounded-lg p-4 mb-4">
             {/* Contador de miembros */}

@@ -199,9 +199,9 @@ const App: React.FC = () => {
       : [...allMembers];
 
     // 1. Filtro por rango de niveles
-    members = members.filter(member =>
-      member.level >= maxLevel && member.level <= minLevel
-    );
+     members = members.filter(member => 
+    member.level >= minLevel && member.level <= maxLevel
+  );
 
     // 2. Ordenar SIEMPRE de mayor a menor nivel después del filtro
     members.sort((a, b) => b.level - a.level);
