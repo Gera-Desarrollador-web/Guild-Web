@@ -8,6 +8,12 @@ type Props = {
     setSortBy: (v: string) => void;
     questFilter: string;
     setQuestFilter: (v: string) => void;
+    levelRange: string;
+    setLevelRange: (v: string) => void;
+    minLevel: number;
+    setMinLevel: (v: number) => void;
+    maxLevel: number;
+    setMaxLevel: (v: number) => void;
 };
 
 const GuildTableHeader: React.FC<Props> = ({
@@ -20,7 +26,32 @@ const GuildTableHeader: React.FC<Props> = ({
     setSortBy,
     questFilter,
     setQuestFilter,
+    levelRange,
+    setLevelRange,
+    minLevel,
+    setMinLevel,
+    maxLevel,
+    setMaxLevel,
 }) => {
+    const handleLevelRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setLevelRange(value);
+
+        const match = value.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (match) {
+            const [, minStr, maxStr] = match;
+            const min = parseInt(minStr, 10);
+            const max = parseInt(maxStr, 10);
+
+            if (!isNaN(min)) setMinLevel(min);
+            if (!isNaN(max)) setMaxLevel(max);
+        } else {
+            // En caso de entrada inválida, usa rango total
+            setMinLevel(0);
+            setMaxLevel(1000);
+        }
+    };
+
     return (
         <div className="bg-[#2d1a0f] border-2 border-[#5d3b1e] rounded-lg p-4 mb-4">
             {/* Contador de miembros */}
@@ -92,6 +123,20 @@ const GuildTableHeader: React.FC<Props> = ({
                             onChange={(e) => setQuestFilter(e.target.value)}
                             placeholder="Nombre de quest"
                             className="bg-[#1a1008] border border-[#5d3b1e] text-[#e8d5b5] rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-[#c4a97a]"
+                        />
+                    </label>
+                </div>
+
+                {/* Filtro de rango de niveles */}
+                <div className="flex items-center">
+                    <label className="flex items-center text-[#e8d5b5]">
+                        <span className="mr-2 font-medium">Rango:</span>
+                        <input
+                            type="text"
+                            value={levelRange}
+                            onChange={handleLevelRangeChange}
+                            placeholder="Ej: 100-50"
+                            className="bg-[#1a1008] border border-[#5d3b1e] text-[#e8d5b5] rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-[#c4a97a] w-24"
                         />
                     </label>
                 </div>

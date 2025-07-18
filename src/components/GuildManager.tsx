@@ -35,6 +35,13 @@ type Props = {
             };
         }>
     >;
+
+    levelRange: string;
+    setLevelRange: React.Dispatch<React.SetStateAction<string>>;
+    minLevel: number;
+    setMinLevel: React.Dispatch<React.SetStateAction<number>>;
+    maxLevel: number;
+    setMaxLevel: React.Dispatch<React.SetStateAction<number>>;
 };
 
 const GuildManager: React.FC<Props> = ({
@@ -53,11 +60,17 @@ const GuildManager: React.FC<Props> = ({
     setSelectedPlayer,
     checkedItems,
     setCheckedItems,
+    levelRange,
+    setLevelRange,
+    minLevel,
+    setMinLevel,
+    maxLevel,
+    setMaxLevel,
 }) => {
     return (
         <div className="bg-[#1a1008]   md:p-6">
             <div className="max-w-7xl mx-auto">
-                
+
                 <div className="bg-[#2d1a0f]   border-[#5d3b1e] ">
                     <GuildTableHeader
                         totalMembers={allMembers.length}
@@ -69,6 +82,12 @@ const GuildManager: React.FC<Props> = ({
                         setSortBy={setSortBy}
                         questFilter={questFilter}
                         setQuestFilter={setQuestFilter}
+                        levelRange={levelRange}
+                        setLevelRange={setLevelRange}
+                        minLevel={minLevel}
+                        setMinLevel={setMinLevel}
+                        maxLevel={maxLevel}
+                        setMaxLevel={setMaxLevel}
                     />
                 </div>
 
@@ -76,7 +95,7 @@ const GuildManager: React.FC<Props> = ({
                     {loading && (
                         <p className="text-center text-[#e8d5b5] py-8">Cargando miembros...</p>
                     )}
-                    
+
                     {error && (
                         <p className="text-center text-[#ff6b6b] py-8">{error}</p>
                     )}

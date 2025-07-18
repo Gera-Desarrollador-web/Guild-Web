@@ -27,7 +27,9 @@ const App: React.FC = () => {
   const [, setOriginalCheckedItems] = useState<CheckedItems>({});
   const [skipSaveOnFirstLoad, setSkipSaveOnFirstLoad] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+  const [levelRange, setLevelRange] = useState<string>("");
+  const [minLevel, setMinLevel] = useState<number>(0);
+  const [maxLevel, setMaxLevel] = useState<number>(1000);
   const previousAllMembersRef = useRef<GuildMember[]>([]);
 
   // Función para guardar datos en Firebase
@@ -196,6 +198,15 @@ const App: React.FC = () => {
       ? allMembers.filter((m) => m.status.toLowerCase() === "online")
       : [...allMembers];
 
+    // 1. Filtro por rango de niveles
+    members = members.filter(member =>
+      member.level >= maxLevel && member.level <= minLevel
+    );
+
+    // 2. Ordenar SIEMPRE de mayor a menor nivel después del filtro
+    members.sort((a, b) => b.level - a.level);
+
+    // 3. Filtro por búsqueda (quest/nombre)
     const filter = questFilter.trim().toLowerCase();
     if (filter) {
       members = members.filter((member) => {
@@ -226,54 +237,57 @@ const App: React.FC = () => {
       });
     }
 
-    // Ordenar miembros
-    return members.sort((a, b) => {
-      if (sortBy === "level") return b.level - a.level;
-      if (sortBy === "vocation") return a.vocation.localeCompare(b.vocation);
-      if (sortBy === "status") return a.status.localeCompare(b.status);
+    // 4. Si hay un criterio de ordenamiento adicional (diferente a nivel), aplicarlo
+    //    pero manteniendo el orden principal por nivel
+    if (sortBy && sortBy !== "level") {
+      members.sort((a, b) => {
+        // Si tienen el mismo nivel, aplica el orden secundario
+        if (a.level === b.level) {
+          if (sortBy === "vocation") return a.vocation.localeCompare(b.vocation);
+          if (sortBy === "status") return a.status.localeCompare(b.status);
 
-      if (["Druid", "Paladin", "Sorcerer", "Knight", "Monk"].includes(sortBy)) {
-        // Función helper para determinar prioridad
-        const getPriority = (vocation: string) => {
-          switch (sortBy) {
-            case "Druid":
-              if (vocation === "Elder Druid") return 1;
-              if (vocation.includes("Druid")) return 2;
-              return 3;
-            case "Paladin":
-              if (vocation === "Royal Paladin") return 1;
-              if (vocation.includes("Paladin")) return 2;
-              return 3;
-            case "Sorcerer":
-              if (vocation === "Master Sorcerer") return 1;
-              if (vocation.includes("Sorcerer")) return 2;
-              return 3;
-            case "Knight":
-              if (vocation === "Elite Knight") return 1;
-              if (vocation.includes("Knight")) return 2;
-              return 3;
-            case "Monk":
-              if (vocation === "Exalted Monk") return 1;
-              if (vocation.includes("Monk")) return 2;
-              return 3;
-            default:
-              return 3;
+          if (["Druid", "Paladin", "Sorcerer", "Knight", "Monk"].includes(sortBy)) {
+            const getPriority = (vocation: string) => {
+              switch (sortBy) {
+                case "Druid":
+                  if (vocation === "Elder Druid") return 1;
+                  if (vocation.includes("Druid")) return 2;
+                  return 3;
+                case "Paladin":
+                  if (vocation === "Royal Paladin") return 1;
+                  if (vocation.includes("Paladin")) return 2;
+                  return 3;
+                case "Sorcerer":
+                  if (vocation === "Master Sorcerer") return 1;
+                  if (vocation.includes("Sorcerer")) return 2;
+                  return 3;
+                case "Knight":
+                  if (vocation === "Elite Knight") return 1;
+                  if (vocation.includes("Knight")) return 2;
+                  return 3;
+                case "Monk":
+                  if (vocation === "Exalted Monk") return 1;
+                  if (vocation.includes("Monk")) return 2;
+                  return 3;
+                default:
+                  return 3;
+              }
+            };
+
+            const aPriority = getPriority(a.vocation);
+            const bPriority = getPriority(b.vocation);
+
+            if (aPriority !== bPriority) return aPriority - bPriority;
           }
-        };
+          return a.name.localeCompare(b.name);
+        }
+        // Si tienen diferente nivel, mantiene el orden por nivel (0 porque ya está ordenado)
+        return 0;
+      });
+    }
 
-        const aPriority = getPriority(a.vocation);
-        const bPriority = getPriority(b.vocation);
-
-        // Primero por prioridad (1 > 2 > 3)
-        if (aPriority !== bPriority) return aPriority - bPriority;
-
-        // Luego alfabético por nombre
-        return a.name.localeCompare(b.name);
-      }
-
-      return a.name.localeCompare(b.name);
-    });
-  }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems]);
+    return members;
+  }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems, minLevel, maxLevel]);
 
   if (!isAuthenticated) {
     return <LoginGate onAuthenticated={handleAuthenticated} />;
@@ -313,6 +327,12 @@ const App: React.FC = () => {
             setSelectedPlayer={setSelectedPlayer}
             checkedItems={checkedItems}
             setCheckedItems={setCheckedItems}
+            levelRange={levelRange}
+            setLevelRange={setLevelRange}
+            minLevel={minLevel}
+            setMinLevel={setMinLevel}
+            maxLevel={maxLevel}
+            setMaxLevel={setMaxLevel}
           />
         </div>
       </div>
