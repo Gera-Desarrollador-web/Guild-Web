@@ -28,9 +28,9 @@ const GuildTableHeader: React.FC<Props> = ({
     setQuestFilter,
     levelRange,
     setLevelRange,
-    minLevel,
+
     setMinLevel,
-    maxLevel,
+
     setMaxLevel,
 }) => {
     const handleLevelRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
