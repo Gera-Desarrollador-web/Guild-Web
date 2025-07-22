@@ -199,22 +199,24 @@ const App: React.FC = () => {
       : [...allMembers];
 
     // 1. Filtro por rango de niveles
-     members = members.filter(member => 
-    member.level >= minLevel && member.level <= maxLevel
-  );
+    members = members.filter(member =>
+      member.level >= minLevel && member.level <= maxLevel
+    );
 
-    // 2. Ordenar SIEMPRE de mayor a menor nivel después del filtro
-    members.sort((a, b) => b.level - a.level);
-
-    // 3. Filtro por búsqueda (quest/nombre)
+    // 2. Filtro por búsqueda (quest/nombre)
     const filter = questFilter.trim().toLowerCase();
     if (filter) {
       members = members.filter((member) => {
         const nameMatches = member.name.toLowerCase().includes(filter);
+        const vocationMatches = member.vocation.toLowerCase().includes(filter);
+
+        // Si el filtro coincide con el nombre o vocación, mostrar el miembro
+        if (nameMatches || vocationMatches) return true;
+
         const data = member.data || {};
         const checks = checkedItems[member.name] || {};
 
-        return nameMatches || Object.entries(data).some(([sectionKey, items]) => {
+        return Object.entries(data).some(([sectionKey, items]) => {
           if (!["bosses", "quests", "chares", "notas"].includes(sectionKey)) return false;
 
           const section = sectionKey as keyof typeof checks;
@@ -237,54 +239,57 @@ const App: React.FC = () => {
       });
     }
 
-    // 4. Si hay un criterio de ordenamiento adicional (diferente a nivel), aplicarlo
-    //    pero manteniendo el orden principal por nivel
-    if (sortBy && sortBy !== "level") {
-      members.sort((a, b) => {
-        // Si tienen el mismo nivel, aplica el orden secundario
-        if (a.level === b.level) {
-          if (sortBy === "vocation") return a.vocation.localeCompare(b.vocation);
-          if (sortBy === "status") return a.status.localeCompare(b.status);
-
-          if (["Druid", "Paladin", "Sorcerer", "Knight", "Monk"].includes(sortBy)) {
-            const getPriority = (vocation: string) => {
-              switch (sortBy) {
-                case "Druid":
-                  if (vocation === "Elder Druid") return 1;
-                  if (vocation.includes("Druid")) return 2;
-                  return 3;
-                case "Paladin":
-                  if (vocation === "Royal Paladin") return 1;
-                  if (vocation.includes("Paladin")) return 2;
-                  return 3;
-                case "Sorcerer":
-                  if (vocation === "Master Sorcerer") return 1;
-                  if (vocation.includes("Sorcerer")) return 2;
-                  return 3;
-                case "Knight":
-                  if (vocation === "Elite Knight") return 1;
-                  if (vocation.includes("Knight")) return 2;
-                  return 3;
-                case "Monk":
-                  if (vocation === "Exalted Monk") return 1;
-                  if (vocation.includes("Monk")) return 2;
-                  return 3;
-                default:
-                  return 3;
-              }
-            };
-
-            const aPriority = getPriority(a.vocation);
-            const bPriority = getPriority(b.vocation);
-
-            if (aPriority !== bPriority) return aPriority - bPriority;
+    // 3. Ordenamiento
+    members.sort((a, b) => {
+      // Orden principal según sortBy
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      } else if (sortBy === "level") {
+        return b.level - a.level; // Mayor a menor nivel
+      } else if (sortBy === "vocation") {
+        return a.vocation.localeCompare(b.vocation);
+      } else if (sortBy === "status") {
+        return a.status.localeCompare(b.status);
+      } else if (["Druid", "Paladin", "Sorcerer", "Knight", "Monk"].includes(sortBy)) {
+        const getPriority = (vocation: string) => {
+          switch (sortBy) {
+            case "Druid":
+              if (vocation === "Elder Druid") return 1;
+              if (vocation.includes("Druid")) return 2;
+              return 3;
+            case "Paladin":
+              if (vocation === "Royal Paladin") return 1;
+              if (vocation.includes("Paladin")) return 2;
+              return 3;
+            case "Sorcerer":
+              if (vocation === "Master Sorcerer") return 1;
+              if (vocation.includes("Sorcerer")) return 2;
+              return 3;
+            case "Knight":
+              if (vocation === "Elite Knight") return 1;
+              if (vocation.includes("Knight")) return 2;
+              return 3;
+            case "Monk":
+              if (vocation === "Exalted Monk") return 1;
+              if (vocation.includes("Monk")) return 2;
+              return 3;
+            default:
+              return 3;
           }
-          return a.name.localeCompare(b.name);
-        }
-        // Si tienen diferente nivel, mantiene el orden por nivel (0 porque ya está ordenado)
-        return 0;
-      });
-    }
+        };
+
+        const aPriority = getPriority(a.vocation);
+        const bPriority = getPriority(b.vocation);
+
+        if (aPriority !== bPriority) return aPriority - bPriority;
+
+        // Si tienen la misma prioridad, ordenar por nivel (mayor a menor)
+        return b.level - a.level;
+      }
+
+      // Por defecto, ordenar por nombre
+      return a.name.localeCompare(b.name);
+    });
 
     return members;
   }, [allMembers, showOnlyOnline, questFilter, sortBy, checkedItems, minLevel, maxLevel]);
