@@ -101,14 +101,14 @@ const GuildTableHeader: React.FC<Props> = ({
                             className="bg-[#1a1008] border border-[#5d3b1e] text-[#e8d5b5] rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-[#c4a97a]"
                         >
                             <option value="name">Nombre (A-Z)</option>
-                            <option value="level">Nivel</option>
                             <option value="vocation">Vocación (A-Z)</option>
+                            <option value="level">Nivel</option>
+                            <option value="status">Estado</option>
                             <option value="Druid">Druid</option>
                             <option value="Paladin">Paladin</option>
                             <option value="Sorcerer">Sorcerer</option>
                             <option value="Knight">Knight</option>
                             <option value="Monk">Monk</option>
-                            <option value="status">Estado</option>
                         </select>
                     </label>
                 </div>
