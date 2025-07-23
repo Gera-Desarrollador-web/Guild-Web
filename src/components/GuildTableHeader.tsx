@@ -14,6 +14,10 @@ type Props = {
     setMinLevel: (v: number) => void;
     maxLevel: number;
     setMaxLevel: (v: number) => void;
+    newMembersThisWeek: number;
+    leftMembersThisWeek: number;
+    invitesCount: number;
+    applicationsOpen: boolean;
 };
 
 const GuildTableHeader: React.FC<Props> = ({
@@ -30,6 +34,10 @@ const GuildTableHeader: React.FC<Props> = ({
     setLevelRange,
     setMinLevel,
     setMaxLevel,
+    newMembersThisWeek,
+    leftMembersThisWeek,
+    invitesCount,
+    applicationsOpen,
 }) => {
     const handleLevelRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
@@ -68,8 +76,29 @@ const GuildTableHeader: React.FC<Props> = ({
                     <span className="font-bold text-[#aaaaaa]">Offline:</span>
                     <span className="bg-[#1a1008] px-3 py-1 rounded">{offlineCount}</span>
                 </div>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#4caf50]">Nuevos:</span>
+                    <span className="bg-[#1a1008] px-3 py-1 rounded">{newMembersThisWeek}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-[#f44336]">Salidos:</span>
+                    <span className="bg-[#1a1008] px-3 py-1 rounded">{leftMembersThisWeek}</span>
+                </div>
             </div>
 
+            {/* Segunda fila con información de invitaciones */}
+            <div className="flex flex-wrap justify-center gap-4 mb-4 text-[#e8d5b5]">
+                <div className="flex items-center gap-2">
+                    <span className="font-bold">Invitaciones:</span>
+                    <span className="bg-[#1a1008] px-3 py-1 rounded">{invitesCount}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <span className="font-bold">Aplicaciones:</span>
+                    <span className={`px-3 py-1 rounded ${applicationsOpen ? 'bg-[#4caf50]' : 'bg-[#f44336]'}`}>
+                        {applicationsOpen ? 'Abiertas' : 'Cerradas'} ({invitesCount})
+                    </span>
+                </div>
+            </div>
             {/* Controles de filtrado */}
             <div className="flex flex-wrap justify-center gap-4">
                 {/* Checkbox Mostrar solo online */}

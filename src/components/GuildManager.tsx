@@ -1,8 +1,9 @@
 import React from "react";
-import { GuildMember } from "../types";
+import { GuildMember, MemberChange, CheckedItems } from "../types";
 import GuildTableHeader from "./GuildTableHeader";
 import GuildMembersTable from "./GuildMembersTable";
 import PlayerModal from "./PlayerModal/PlayerModal";
+import MemberChangesSection from "./MemberChangesSection";
 
 
 type Props = {
@@ -19,22 +20,8 @@ type Props = {
     filteredMembers: GuildMember[];
     selectedPlayer: GuildMember | null;
     setSelectedPlayer: React.Dispatch<React.SetStateAction<GuildMember | null>>;
-    checkedItems: {
-        [playerName: string]: {
-            [categoryName: string]: {
-                [itemName: string]: boolean;
-            };
-        };
-    };
-    setCheckedItems: React.Dispatch<
-        React.SetStateAction<{
-            [playerName: string]: {
-                [categoryName: string]: {
-                    [itemName: string]: boolean;
-                };
-            };
-        }>
-    >;
+    checkedItems: CheckedItems;  // Usa el tipo definido globalmente
+    setCheckedItems: React.Dispatch<React.SetStateAction<CheckedItems>>;
 
     levelRange: string;
     setLevelRange: React.Dispatch<React.SetStateAction<string>>;
@@ -42,6 +29,11 @@ type Props = {
     setMinLevel: React.Dispatch<React.SetStateAction<number>>;
     maxLevel: number;
     setMaxLevel: React.Dispatch<React.SetStateAction<number>>;
+    newMembersThisWeek: number;       // ✅ Añadir esta línea
+    leftMembersThisWeek: number;      // ✅ Añadir esta línea
+    invitesCount: number;             // ✅ Añadir esta línea
+    applicationsOpen: boolean;        // ✅ Añadir esta línea (¡Esta es la clave!)
+    memberChanges: MemberChange[];
 };
 
 const GuildManager: React.FC<Props> = ({
@@ -66,6 +58,11 @@ const GuildManager: React.FC<Props> = ({
     setMinLevel,
     maxLevel,
     setMaxLevel,
+    newMembersThisWeek,    // ✅ Añade esta línea
+    leftMembersThisWeek,   // ✅ Añade esta línea
+    invitesCount,         // ✅ Añade esta línea
+    applicationsOpen,
+    memberChanges,
 }) => {
     return (
         <div className="bg-[#1a1008]   md:p-6">
@@ -88,9 +85,14 @@ const GuildManager: React.FC<Props> = ({
                         setMinLevel={setMinLevel}
                         maxLevel={maxLevel}
                         setMaxLevel={setMaxLevel}
+                        newMembersThisWeek={newMembersThisWeek}
+                        leftMembersThisWeek={leftMembersThisWeek}
+                        invitesCount={invitesCount}
+                        applicationsOpen={applicationsOpen}
                     />
-                </div>
 
+                </div>
+                <MemberChangesSection changes={memberChanges} />
                 <div className="bg-[#2d1a0f] border-2 border-[#5d3b1e] shadow-lg ">
                     {loading && (
                         <p className="text-center text-[#e8d5b5] py-8">Cargando miembros...</p>

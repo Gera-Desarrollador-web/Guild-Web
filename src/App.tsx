@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import GuildManager from "./components/GuildManager";
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { GuildMember, CheckedItems } from "./types";
+import { GuildMember, CheckedItems, MemberChange } from "./types";
 import LoginGate from "./components/LoginGate";
+
 
 type BossEntry = { name: string; subItems: string[] };
 
@@ -31,6 +32,11 @@ const App: React.FC = () => {
   const [minLevel, setMinLevel] = useState<number>(0);
   const [maxLevel, setMaxLevel] = useState<number>(1000);
   const previousAllMembersRef = useRef<GuildMember[]>([]);
+  const [newMembersThisWeek, setNewMembersThisWeek] = useState(0);
+  const [leftMembersThisWeek, setLeftMembersThisWeek] = useState(0);
+  const [invitesCount, setInvitesCount] = useState(0);
+  const [applicationsOpen, setApplicationsOpen] = useState(false);
+  const [memberChanges, setMemberChanges] = useState<MemberChange[]>([]);
 
   // Función para guardar datos en Firebase
   const saveDataToFirestore = useCallback(async () => {
@@ -40,13 +46,13 @@ const App: React.FC = () => {
           ...member,
           levelHistory: member.levelHistory?.slice(-MAX_HISTORY_ENTRIES) || []
         })),
-        checkedItems
+        checkedItems,
+        recentChanges: memberChanges.slice(0, 100) // Añadir esta línea
       }, { merge: true });
-      console.log("Datos guardados en Firebase");
     } catch (error) {
       console.error("Error al guardar en Firebase:", error);
     }
-  }, [allMembers, checkedItems, guildName]);
+  }, [allMembers, checkedItems, memberChanges, guildName]);
 
   // Efecto para guardar datos cuando cambian
   useEffect(() => {
@@ -70,13 +76,19 @@ const App: React.FC = () => {
     setError("");
 
     try {
-      // Cargar datos de la API de Tibia
+      // 1. Cargar datos de la API de Tibia
       const guildUrl = `https://api.tibiadata.com/v4/guild/${encodeURIComponent(guildName)}`;
       const guildRes = await fetch(guildUrl);
+
+      if (!guildRes.ok) {
+        throw new Error(`Error al cargar datos: ${guildRes.status}`);
+      }
+
       const guildData = await guildRes.json();
       const basicMembers = guildData.guild.members || [];
+      const guildInvites = guildData.guild.invites || [];
 
-      // Cargar datos de Firebase
+      // 2. Cargar datos históricos de Firebase
       const docRef = doc(db, "guilds", guildName);
       const snap = await getDoc(docRef);
 
@@ -89,14 +101,104 @@ const App: React.FC = () => {
 
       let loadedCheckedItems: CheckedItems = {};
       let membersFromDb: GuildMember[] = [];
+      let previousMembers: string[] = [];
+      let previousChanges: MemberChange[] = [];
 
       if (snap.exists()) {
         const data = snap.data();
         loadedCheckedItems = data.checkedItems || {};
         membersFromDb = data.allMembers || [];
+        previousMembers = membersFromDb.map(m => m.name);
+        previousChanges = data.recentChanges || [];
       }
 
-      // Procesar miembros
+      // 3. Procesar cambios en la membresía
+      const currentMemberNames = basicMembers.map(m => m.name);
+      const changes: MemberChange[] = [];
+
+      // Nuevos miembros (presentes ahora pero no antes)
+      basicMembers
+        .filter(member => !previousMembers.includes(member.name))
+        .forEach(member => {
+          changes.push({
+            name: member.name,
+            date: member.joined || new Date().toISOString(),
+            type: 'joined',
+            level: member.level,
+            vocation: member.vocation,
+            status: member.status.toLowerCase()
+          });
+        });
+
+      // Miembros que salieron (presentes antes pero no ahora)
+      previousMembers
+        .filter(name => !currentMemberNames.includes(name))
+        .forEach(name => {
+          const member = membersFromDb.find(m => m.name === name);
+          changes.push({
+            name,
+            date: new Date().toISOString(),
+            type: 'left',
+            level: member?.level || 0,
+            vocation: member?.vocation || 'Unknown',
+            status: member?.status || 'offline'
+          });
+        });
+
+      // 4. Procesar invitaciones
+      const invites: MemberChange[] = await Promise.all(
+        guildInvites.map(async (invite: any) => {
+          try {
+            // Obtener detalles adicionales del personaje
+            const charUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(invite.name)}`;
+            const charRes = await fetch(charUrl);
+
+            if (charRes.ok) {
+              const charData = await charRes.json();
+              return {
+                name: invite.name,
+                date: invite.date,
+                type: 'invited' as const,
+                level: charData.character?.character?.level || 0,
+                vocation: charData.character?.character?.vocation || 'Unknown',
+                status: 'pending'
+              };
+            }
+            return {
+              name: invite.name,
+              date: invite.date,
+              type: 'invited' as const,
+              level: 0,
+              vocation: 'Unknown',
+              status: 'pending'
+            };
+          } catch (e) {
+            console.warn(`Error al cargar datos de ${invite.name}:`, e);
+            return {
+              name: invite.name,
+              date: invite.date,
+              type: 'invited' as const,
+              level: 0,
+              vocation: 'Unknown',
+              status: 'pending'
+            };
+          }
+        })
+      );
+
+      // 5. Combinar y ordenar todos los cambios
+      const allChanges = [...changes, ...invites, ...previousChanges]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 100); // Limitar a 100 registros
+
+      // 6. Actualizar estados de cambios
+      setMemberChanges(allChanges);
+      setNewMembersThisWeek(changes.filter(c => c.type === 'joined').length);
+      setLeftMembersThisWeek(changes.filter(c => c.type === 'left').length);
+      setInvitesCount(invites.length);
+      setApplicationsOpen(guildData.guild.open_applications || false);
+
+      // 7. Procesar información detallada de los miembros actuales
       const detailedMembers = await Promise.all(
         basicMembers.map(async (member: any) => {
           const memberFromDb = membersFromDb.find((m) => m.name === member.name);
@@ -105,6 +207,9 @@ const App: React.FC = () => {
           try {
             const characterUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(member.name)}`;
             const characterRes = await fetch(characterUrl);
+
+            if (!characterRes.ok) throw new Error("Error al cargar personaje");
+
             const characterData = await characterRes.json();
             const char = characterData.character.character;
             const deaths = characterData.character.deaths || [];
@@ -121,7 +226,7 @@ const App: React.FC = () => {
 
             return {
               name: char.name,
-              status: member.status,
+              status: member.status.toLowerCase(),
               level: currentLevel,
               vocation: char.vocation || member.vocation,
               sex: char.sex?.toLowerCase() === "female" ? "female" : "male",
@@ -133,12 +238,13 @@ const App: React.FC = () => {
               data: memberFromDb?.data || emptyData,
               timeZone: memberFromDb?.timeZone || "America/Mexico_City",
               levelHistory,
+              joinDate: memberFromDb?.joinDate || member.joined || currentDate,
             };
           } catch (e) {
             console.warn(`Error cargando personaje ${member.name}`, e);
             return {
               name: member.name,
-              status: member.status,
+              status: member.status.toLowerCase(),
               level: member.level,
               vocation: member.vocation,
               sex: "unknown",
@@ -146,20 +252,29 @@ const App: React.FC = () => {
               data: memberFromDb?.data || emptyData,
               timeZone: memberFromDb?.timeZone || "America/Mexico_City",
               levelHistory: memberFromDb?.levelHistory || [{ date: currentDate, level: member.level }],
+              joinDate: memberFromDb?.joinDate || member.joined || currentDate,
             };
           }
         })
       );
 
+      // 8. Actualizar estados principales
       setAllMembers(detailedMembers);
       setCheckedItems(loadedCheckedItems);
       setOriginalCheckedItems(loadedCheckedItems);
       previousAllMembersRef.current = detailedMembers;
       setHasLoadedOnce(true);
+
     } catch (error) {
+      console.error("Error al cargar los datos de la guild:", error);
       setError("Error al cargar los datos de la guild.");
       setAllMembers([]);
       setCheckedItems({});
+      setMemberChanges([]);
+      setNewMembersThisWeek(0);
+      setLeftMembersThisWeek(0);
+      setInvitesCount(0);
+      setApplicationsOpen(false);
     } finally {
       setLoading(false);
     }
@@ -338,6 +453,11 @@ const App: React.FC = () => {
             setMinLevel={setMinLevel}
             maxLevel={maxLevel}
             setMaxLevel={setMaxLevel}
+            newMembersThisWeek={newMembersThisWeek}  // ✅ Única instancia
+            leftMembersThisWeek={leftMembersThisWeek}  // ✅ Única instancia
+            invitesCount={invitesCount}  // ✅ Única instancia
+            applicationsOpen={applicationsOpen}  // ✅ Única instancia
+            memberChanges={memberChanges}
           />
         </div>
       </div>
