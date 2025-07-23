@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import GuildManager from "./components/GuildManager";
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { GuildMember, CheckedItems, MemberChange } from "./types";
+import { GuildMember, CheckedItems, MemberChange, Vocation,GuildApiResponse  } from "./types";
 import LoginGate from "./components/LoginGate";
 
 
@@ -113,23 +113,22 @@ const App: React.FC = () => {
       }
 
       // 3. Procesar cambios en la membresía
-      const currentMemberNames = basicMembers.map(m => m.name);
+const currentMemberNames = basicMembers.map((m: GuildApiResponse['members'][0]) => m.name);
       const changes: MemberChange[] = [];
 
       // Nuevos miembros (presentes ahora pero no antes)
       basicMembers
-        .filter(member => !previousMembers.includes(member.name))
-        .forEach(member => {
+        .filter((member: { name: string; joined?: string; level: number; vocation: string; status: string }) => !previousMembers.includes(member.name))
+        .forEach((member: { name: string; joined?: string; level: number; vocation: string; status: string }) => {
           changes.push({
             name: member.name,
             date: member.joined || new Date().toISOString(),
             type: 'joined',
             level: member.level,
-            vocation: member.vocation,
-            status: member.status.toLowerCase()
+            vocation: member.vocation as Vocation, // ← Afirmamos que es de tipo Vocation
+            status: member.status.toLowerCase() as 'online' | 'offline' // Conversión de tipo adicional
           });
         });
-
       // Miembros que salieron (presentes antes pero no ahora)
       previousMembers
         .filter(name => !currentMemberNames.includes(name))

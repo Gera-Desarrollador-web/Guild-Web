@@ -34,10 +34,10 @@ export type Sex = 'male' | 'female' | 'unknown';
 
 // ==================== DATA STRUCTURES ====================
 export type GuildMemberData = {
-  bosses: BossEntry[];
-  quests: BossEntry[];
-  chares: string[];
-  notas: string[];
+  bosses?: BossEntry[];
+  quests?: BossEntry[];
+  chares?: string[];
+  notas?: string[];
 };
 
 export type CheckedItemsCategory = {
