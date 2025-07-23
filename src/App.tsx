@@ -186,9 +186,15 @@ const App: React.FC = () => {
       );
 
       // 5. Combinar y ordenar todos los cambios
-      const allChanges = [...changes, ...invites, ...previousChanges]
+      const allChanges = [
+        ...changes,
+        ...invites.filter(invite =>
+          !previousChanges.some(c => c.name === invite.name && c.type === 'invited')
+        ),
+        ...previousChanges
+      ]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 100); // Limitar a 100 registros
+        .slice(0, 100);
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
