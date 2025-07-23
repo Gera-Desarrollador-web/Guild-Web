@@ -145,10 +145,11 @@ const App: React.FC = () => {
         });
 
       // 4. Procesar invitaciones
+      // 4. Procesar invitaciones
+      const currentInviteNames = guildInvites.map((invite: any) => invite.name);
       const invites: MemberChange[] = await Promise.all(
         guildInvites.map(async (invite: any) => {
           try {
-            // Obtener detalles adicionales del personaje
             const charUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(invite.name)}`;
             const charRes = await fetch(charUrl);
 
@@ -160,7 +161,8 @@ const App: React.FC = () => {
                 type: 'invited' as const,
                 level: charData.character?.character?.level || 0,
                 vocation: charData.character?.character?.vocation || 'Unknown',
-                status: 'pending'
+                status: 'pending',
+                invitedBy: invite.invited_by
               };
             }
             return {
@@ -169,7 +171,8 @@ const App: React.FC = () => {
               type: 'invited' as const,
               level: 0,
               vocation: 'Unknown',
-              status: 'pending'
+              status: 'pending',
+              invitedBy: invite.invited_by
             };
           } catch (e) {
             console.warn(`Error al cargar datos de ${invite.name}:`, e);
@@ -179,29 +182,20 @@ const App: React.FC = () => {
               type: 'invited' as const,
               level: 0,
               vocation: 'Unknown',
-              status: 'pending'
+              status: 'pending',
+              invitedBy: invite.invited_by
             };
           }
         })
       );
 
-      // 5. Combinar y ordenar todos los cambios
-      // 1. Combinar cambios actuales con historial, filtrando invitaciones obsoletas
+      // 5. Combinar cambios
       const allChanges = [
         ...changes,
-        ...invites.map(invite => ({ ...invite, status: 'pending' as const })),
-        ...previousChanges.filter(prevChange => {
-          if (prevChange.type !== 'invited') return true;
-
-          // Solo mantener invitaciones anteriores si:
-          // 1. No están en las nuevas invitaciones
-          // 2. Están pendientes y no han expirado
-          const isStillPending = prevChange.status === 'pending' &&
-            (!prevChange.expiresAt || new Date(prevChange.expiresAt) > new Date());
-
-          return isStillPending &&
-            !invites.some(invite => invite.name === prevChange.name);
-        })
+        ...invites,
+        ...previousChanges
+          // Mantener solo las invitaciones históricas que no están en la API actual
+          .filter(prevChange => prevChange.type !== 'invited' || !currentInviteNames.includes(prevChange.name))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 100);
 

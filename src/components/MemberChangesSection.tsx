@@ -8,52 +8,27 @@ const MemberChangesSection: React.FC<{ changes: MemberChange[] }> = ({ changes }
     const [leftMembers, setLeftMembers] = useState<MemberChange[]>([]);
 
     useEffect(() => {
-        const fetchInviteDetails = async () => {
-            // 1. Obtener solo invitaciones actuales/pendientes
-            const currentInvites = changes.filter(c =>
-                c.type === 'invited' &&
-                (!c.status || c.status === 'pending') // Filtro adicional de seguridad
-            );
+    // Obtener todas las invitaciones sin filtrar por expiración
+    const allInvites = changes.filter(c => c.type === 'invited');
+    
+    // Obtener miembros que se unieron/salieron en los últimos 7 días
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            // 2. Obtener miembros que se unieron/salieron en los últimos 7 días
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentJoined = changes.filter(c => 
+        c.type === 'joined' && 
+        new Date(c.date) > sevenDaysAgo
+    );
 
-            const recentJoined = changes.filter(c =>
-                c.type === 'joined' &&
-                new Date(c.date) > sevenDaysAgo
-            );
+    const recentLeft = changes.filter(c => 
+        c.type === 'left' && 
+        new Date(c.date) > sevenDaysAgo
+    );
 
-            const recentLeft = changes.filter(c =>
-                c.type === 'left' &&
-                new Date(c.date) > sevenDaysAgo
-            );
-
-            // Procesar detalles solo de invitaciones actuales
-            const details = await Promise.all(
-                currentInvites.map(async (invite) => {
-                    try {
-                        const charUrl = `https://api.tibiadata.com/v4/character/${encodeURIComponent(invite.name)}`;
-                        const charRes = await fetch(charUrl);
-                        const charData = await charRes.json();
-                        return {
-                            ...invite,
-                            level: charData.character?.character?.level || invite.level,
-                            vocation: charData.character?.character?.vocation || invite.vocation
-                        };
-                    } catch (e) {
-                        return invite;
-                    }
-                })
-            );
-
-            setInvitedWithDetails(details);
-            setJoinedMembers(recentJoined);
-            setLeftMembers(recentLeft);
-        };
-
-        fetchInviteDetails();
-    }, [changes]);
+    setInvitedWithDetails(allInvites);
+    setJoinedMembers(recentJoined);
+    setLeftMembers(recentLeft);
+}, [changes]);
 
     const invitedMembers = invitedWithDetails;
 
