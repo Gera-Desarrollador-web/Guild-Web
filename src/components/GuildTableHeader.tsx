@@ -80,7 +80,7 @@ const GuildTableHeader: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                     <span className="font-bold">Aplicaciones:</span>
                     <span className={`px-3 py-1 rounded ${applicationsOpen ? 'bg-[#4caf50]' : 'bg-[#f44336]'}`}>
-                        {applicationsOpen ? 'Abiertas' : 'Cerradas'} ({invitesCount})
+                        {applicationsOpen ? 'Abiertas' : 'Cerradas'} 
                     </span>
                 </div>
             </div>
