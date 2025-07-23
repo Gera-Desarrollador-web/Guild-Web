@@ -74,22 +74,19 @@ const GuildTableHeader: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                     <span className="font-bold text-[#aaaaaa]">Offline:</span>
                     <span className="bg-[#1a1008] px-3 py-1 rounded">{offlineCount}</span>
+               
                 </div>
               
-            </div>
-
-            {/* Segunda fila con información de invitaciones */}
-            <div className="flex flex-wrap justify-center gap-4 mb-4 text-[#e8d5b5]">
-                <div className="flex items-center gap-2">
-                    <span className="font-bold">Invitaciones:</span>
-                    <span className="bg-[#1a1008] px-3 py-1 rounded">{invitesCount}</span>
-                </div>
                 <div className="flex items-center gap-2">
                     <span className="font-bold">Aplicaciones:</span>
                     <span className={`px-3 py-1 rounded ${applicationsOpen ? 'bg-[#4caf50]' : 'bg-[#f44336]'}`}>
                         {applicationsOpen ? 'Abiertas' : 'Cerradas'} ({invitesCount})
                     </span>
                 </div>
+            </div>
+
+            {/* Segunda fila con información de invitaciones */}
+            <div className="flex flex-wrap justify-center gap-4 mb-4 text-[#e8d5b5]">
             </div>
             {/* Controles de filtrado */}
             <div className="flex flex-wrap justify-center gap-4">
