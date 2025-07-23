@@ -34,8 +34,7 @@ const GuildTableHeader: React.FC<Props> = ({
     setLevelRange,
     setMinLevel,
     setMaxLevel,
-    newMembersThisWeek,
-    leftMembersThisWeek,
+   
     invitesCount,
     applicationsOpen,
 }) => {
@@ -76,14 +75,7 @@ const GuildTableHeader: React.FC<Props> = ({
                     <span className="font-bold text-[#aaaaaa]">Offline:</span>
                     <span className="bg-[#1a1008] px-3 py-1 rounded">{offlineCount}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#4caf50]">Nuevos:</span>
-                    <span className="bg-[#1a1008] px-3 py-1 rounded">{newMembersThisWeek}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#f44336]">Salidos:</span>
-                    <span className="bg-[#1a1008] px-3 py-1 rounded">{leftMembersThisWeek}</span>
-                </div>
+              
             </div>
 
             {/* Segunda fila con información de invitaciones */}
