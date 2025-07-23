@@ -113,7 +113,7 @@ const App: React.FC = () => {
       }
 
       // 3. Procesar cambios en la membresía
-      const currentMemberNames = basicMembers.map(m => m.name);
+basicMembers.filter((m: any) => !previousMembers.includes(m.name)) 
       const changes: MemberChange[] = [];
 
       // Nuevos miembros (presentes ahora pero no antes)

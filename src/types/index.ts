@@ -27,7 +27,8 @@ export type Vocation =
   | 'Sorcerer' | 'Master Sorcerer'
   | 'Paladin' | 'Royal Paladin'
   | 'Knight' | 'Elite Knight'
-  | 'None';
+  | 'None'
+  | 'Unknown'; // Añade esto
 
 export type Sex = 'male' | 'female' | 'unknown';
 
