@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import GuildManager from "./components/GuildManager";
 import { db } from "./firebase";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { GuildMember, CheckedItems, MemberChange, Vocation,GuildApiResponse  } from "./types";
+import { GuildMember, CheckedItems, MemberChange, Vocation, GuildApiResponse } from "./types";
 import LoginGate from "./components/LoginGate";
 
 
@@ -113,7 +113,7 @@ const App: React.FC = () => {
       }
 
       // 3. Procesar cambios en la membresía
-const currentMemberNames = basicMembers.map((m: GuildApiResponse['members'][0]) => m.name);
+      const currentMemberNames = basicMembers.map((m: GuildApiResponse['members'][0]) => m.name);
       const changes: MemberChange[] = [];
 
       // Nuevos miembros (presentes ahora pero no antes)
@@ -189,7 +189,20 @@ const currentMemberNames = basicMembers.map((m: GuildApiResponse['members'][0]) 
       const allChanges = [...changes, ...invites, ...previousChanges]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 100); // Limitar a 100 registros
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+      setNewMembersThisWeek(
+        [...previousChanges, ...changes]
+          .filter(c => c.type === 'joined' && new Date(c.date) > sevenDaysAgo)
+          .length
+      );
+
+      setLeftMembersThisWeek(
+        [...previousChanges, ...changes]
+          .filter(c => c.type === 'left' && new Date(c.date) > sevenDaysAgo)
+          .length
+      );
       // 6. Actualizar estados de cambios
       setMemberChanges(allChanges);
       setNewMembersThisWeek(changes.filter(c => c.type === 'joined').length);
