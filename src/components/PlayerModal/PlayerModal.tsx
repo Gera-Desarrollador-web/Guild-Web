@@ -620,16 +620,19 @@ const PlayerModal: React.FC<Props> = ({
         const newZone = timeZones.find((z) => z.code === code);
         if (!newZone || !selectedPlayer) return;
 
+        setSelectedTimeZone(newZone); // <-- Esto estaba faltando
+
         setAllMembers(prev => prev.map(member =>
             member.name === selectedPlayer.name
                 ? {
                     ...member,
                     timeZone: newZone.timeZone,
-                    levelHistory: member.levelHistory || [] // Mantener historial
+                    levelHistory: member.levelHistory || []
                 }
                 : member
         ));
     };
+
 
     const getCheckedItemsForPlayer = () => {
         return checkedItems[selectedPlayer.name]?.[activeTab] || {};
