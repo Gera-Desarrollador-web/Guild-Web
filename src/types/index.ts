@@ -75,7 +75,8 @@ export type MemberChange = {
   type: 'joined' | 'left' | 'invited';
   level: number;
   vocation: Vocation;
-  status: MemberStatus | 'pending';
+  status: MemberStatus | 'pending' | 'accepted' | 'rejected'; // <-- Añade estos estados
+  expiresAt?: string; // Opcional: para manejar expiración
   rank?: string;
   invitedBy?: string;
   previousGuild?: string;
@@ -144,6 +145,8 @@ export type GuildApiResponse = {
     date: string;
     invitedBy: string;
     level?: number;
+    status?: 'pending' | 'accepted' | 'rejected'; // Nuevo campo
+
   }>;
   open_applications: boolean;
   guildhalls?: Array<{
@@ -210,3 +213,4 @@ export type MemberChangesProps = {
   onRevertChange?: (changeId: string) => void;
   showFilters?: boolean;
 };
+export type InviteStatus = 'pending' | 'accepted' | 'rejected' | 'expired';

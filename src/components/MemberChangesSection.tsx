@@ -4,11 +4,16 @@ import { MemberChange } from '../types';
 const MemberChangesSection: React.FC<{ changes: MemberChange[] }> = ({ changes }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [invitedWithDetails, setInvitedWithDetails] = useState<MemberChange[]>([]);
+    const [joinedMembers, setJoinedMembers] = useState<MemberChange[]>([]);
+    const [leftMembers, setLeftMembers] = useState<MemberChange[]>([]);
 
     useEffect(() => {
         const fetchInviteDetails = async () => {
-            // 1. Obtener invitaciones actuales/pendientes (sin filtrar por fecha)
-            const currentInvites = changes.filter(c => c.type === 'invited');
+            // 1. Obtener solo invitaciones actuales/pendientes
+            const currentInvites = changes.filter(c =>
+                c.type === 'invited' &&
+                (!c.status || c.status === 'pending') // Filtro adicional de seguridad
+            );
 
             // 2. Obtener miembros que se unieron/salieron en los últimos 7 días
             const sevenDaysAgo = new Date();
@@ -24,7 +29,7 @@ const MemberChangesSection: React.FC<{ changes: MemberChange[] }> = ({ changes }
                 new Date(c.date) > sevenDaysAgo
             );
 
-            // Procesar detalles de invitados
+            // Procesar detalles solo de invitaciones actuales
             const details = await Promise.all(
                 currentInvites.map(async (invite) => {
                     try {
@@ -43,8 +48,6 @@ const MemberChangesSection: React.FC<{ changes: MemberChange[] }> = ({ changes }
             );
 
             setInvitedWithDetails(details);
-
-            // Actualizar estados para mostrar
             setJoinedMembers(recentJoined);
             setLeftMembers(recentLeft);
         };
@@ -52,9 +55,6 @@ const MemberChangesSection: React.FC<{ changes: MemberChange[] }> = ({ changes }
         fetchInviteDetails();
     }, [changes]);
 
-    // Estados para miembros recientes
-    const [joinedMembers, setJoinedMembers] = useState<MemberChange[]>([]);
-    const [leftMembers, setLeftMembers] = useState<MemberChange[]>([]);
     const invitedMembers = invitedWithDetails;
 
     return (

@@ -186,33 +186,42 @@ const App: React.FC = () => {
       );
 
       // 5. Combinar y ordenar todos los cambios
+      // 1. Combinar cambios actuales con historial, filtrando invitaciones obsoletas
       const allChanges = [
         ...changes,
-        ...invites.filter(invite =>
-          !previousChanges.some(c => c.name === invite.name && c.type === 'invited')
-        ),
-        ...previousChanges
-      ]
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        ...invites.map(invite => ({ ...invite, status: 'pending' as const })),
+        ...previousChanges.filter(prevChange => {
+          if (prevChange.type !== 'invited') return true;
+
+          // Solo mantener invitaciones anteriores si:
+          // 1. No están en las nuevas invitaciones
+          // 2. Están pendientes y no han expirado
+          const isStillPending = prevChange.status === 'pending' &&
+            (!prevChange.expiresAt || new Date(prevChange.expiresAt) > new Date());
+
+          return isStillPending &&
+            !invites.some(invite => invite.name === prevChange.name);
+        })
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 100);
+
+      // 2. Calcular fecha límite para cambios recientes (7 días)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      setNewMembersThisWeek(
-        [...previousChanges, ...changes]
-          .filter(c => c.type === 'joined' && new Date(c.date) > sevenDaysAgo)
-          .length
-      );
+      // 3. Calcular estadísticas semanales basadas en todos los cambios
+      const weeklyJoined = allChanges.filter(c =>
+        c.type === 'joined' && new Date(c.date) > sevenDaysAgo
+      ).length;
 
-      setLeftMembersThisWeek(
-        [...previousChanges, ...changes]
-          .filter(c => c.type === 'left' && new Date(c.date) > sevenDaysAgo)
-          .length
-      );
-      // 6. Actualizar estados de cambios
+      const weeklyLeft = allChanges.filter(c =>
+        c.type === 'left' && new Date(c.date) > sevenDaysAgo
+      ).length;
+
+      // 4. Actualizar estados de una sola vez (evitando duplicados)
       setMemberChanges(allChanges);
-      setNewMembersThisWeek(changes.filter(c => c.type === 'joined').length);
-      setLeftMembersThisWeek(changes.filter(c => c.type === 'left').length);
+      setNewMembersThisWeek(weeklyJoined);
+      setLeftMembersThisWeek(weeklyLeft);
       setInvitesCount(invites.length);
       setApplicationsOpen(guildData.guild.open_applications || false);
 
