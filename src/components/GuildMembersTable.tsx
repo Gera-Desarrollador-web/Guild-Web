@@ -1,28 +1,19 @@
 import React from "react";
-import { GuildMember } from "../types";
+import { GuildMember, CheckedItems } from "../types";
 
 type Props = {
   members: GuildMember[];
   onPlayerSelect: (player: GuildMember) => void;
-  checkedItems: {
-    [playerName: string]: {
-      [categoryName: string]: {
-        [itemName: string]: boolean;
-      };
-    };
-  };
-  setCheckedItems: React.Dispatch<
-    React.SetStateAction<{
-      [playerName: string]: {
-        [categoryName: string]: {
-          [itemName: string]: boolean;
-        };
-      };
-    }>
-  >;
+  checkedItems: CheckedItems;
+  setCheckedItems: React.Dispatch<React.SetStateAction<CheckedItems>>;
 };
 
-const GuildMembersTable: React.FC<Props> = ({ members, onPlayerSelect }) => (
+const GuildMembersTable: React.FC<Props> = ({
+  members,
+  onPlayerSelect,
+  
+}) => (
+
   <div className="overflow-x-auto max-h-[600px]  border-2 border-[#5d3b1e] bg-[#2d1a0f] shadow-lg">
     <table className="w-full min-w-[600px] md:w-full border-collapse">
       <thead className="bg-[#1a1008] sticky top-0 z-20">
@@ -43,8 +34,8 @@ const GuildMembersTable: React.FC<Props> = ({ members, onPlayerSelect }) => (
       </thead>
       <tbody className="divide-y divide-[#5d3b1e] overflow-y-auto">
         {members.map((player) => (
-          <tr 
-            key={player.name} 
+          <tr
+            key={player.name}
             className="hover:bg-[#1a1008] transition-colors duration-150"
           >
             <td

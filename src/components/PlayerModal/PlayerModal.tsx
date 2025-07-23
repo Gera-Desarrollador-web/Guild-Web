@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { BossEntry, GuildMember } from "../../types";
+import { BossEntry, GuildMember, CheckedItems } from "../../types";
 import { PlayerInfo } from "./PlayerInfo";
 import { DeathList } from "./DeathList";
 import { TabNavigation } from "./TabNavigation";
@@ -9,14 +9,7 @@ import { AddItemForm } from "./AddItemForm";
 import { LevelHistoryEntry } from "../../types"
 
 
-type CheckedItems = {
-    [playerName: string]: {
-        bosses?: { [item: string]: boolean };
-        quests?: { [item: string]: boolean };
-        chares?: { [item: string]: boolean };
-        notas?: { [item: string]: boolean };
-    };
-};
+
 
 type Props = {
     selectedPlayer: GuildMember | null;
