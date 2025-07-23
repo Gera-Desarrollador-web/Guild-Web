@@ -34,8 +34,6 @@ const GuildTableHeader: React.FC<Props> = ({
     setLevelRange,
     setMinLevel,
     setMaxLevel,
-   
-    invitesCount,
     applicationsOpen,
 }) => {
     const handleLevelRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
