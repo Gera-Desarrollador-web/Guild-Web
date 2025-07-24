@@ -195,10 +195,9 @@ const App: React.FC = () => {
         ...invites,
         ...previousChanges
           // Mantener solo las invitaciones históricas que no están en la API actual
-          .filter(prevChange => prevChange.type !== 'invited' || !currentInviteNames.includes(prevChange.name))
+          .filter(prevChange => prevChange.type !== 'invited')
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 100);
-
       // 2. Calcular fecha límite para cambios recientes (7 días)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
